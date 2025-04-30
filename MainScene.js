@@ -79,6 +79,7 @@ class MainScene extends Phaser.Scene {
         });
   
         // Start here
+        this.isPointerInGatherContainer = false;
         this.input.addPointer(2); // Enable multi-touch
         this.createUI();
 
@@ -96,9 +97,48 @@ class MainScene extends Phaser.Scene {
         this.cameraZoom = 1;
         this.pinchStartDistance = null;
         this.cameras.main.setZoom(this.cameraZoom);
-        
+
+
+this.input.on('pointermove', (pointer) => {
+    // Ignore all camera interaction if touch started in gatherContainer
+    if (this.isPointerInGatherContainer) return;
+
+    const pointers = this.input.manager.pointers.filter(p => p.isDown);
+
+    // Handle pinch zoom
+    if (pointers.length === 2) {
+        const [p1, p2] = pointers;
+        const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
+
+        if (this.pinchStartDistance === null) {
+            this.pinchStartDistance = dist;
+        } else {
+            const delta = dist - this.pinchStartDistance;
+            this.pinchStartDistance = dist;
+
+            const zoomFactor = 1 + delta * 0.0025;
+            this.cameraZoom = Phaser.Math.Clamp(this.cameraZoom * zoomFactor, this.minZoom, 5);
+            this.cameras.main.setZoom(this.cameraZoom);
+        }
+    } 
+    // Handle drag-to-pan
+    else if (pointers.length === 1 && pointer.isDown) {
+        const dragSpeed = 1 / this.cameraZoom;
+        this.cameras.main.scrollX -= pointer.velocity.x * dragSpeed;
+        this.cameras.main.scrollY -= pointer.velocity.y * dragSpeed;
+        this.pinchStartDistance = null; // cancel zoom state
+    } 
+    else {
+        this.pinchStartDistance = null;
+    }
+});
+
+
+/*
         // Listen for pinch gestures
         this.input.on('pointermove', () => {
+            if (this.isPointerInGatherContainer) return;
+
             const pointers = this.input.manager.pointers.filter(p => p.isDown);
         
             if (pointers.length === 2) {
@@ -118,7 +158,7 @@ class MainScene extends Phaser.Scene {
             } else {
                 this.pinchStartDistance = null;
             }
-        });
+        });*/
     //
     
 
@@ -207,6 +247,27 @@ boxList.addBox({
     buttonLabel: "Gather",
     onAction: () => console.log("Gathering pebbles...")
 });
+
+boxList.addBox({
+    id: "test_1",
+    title: "Gather TEST1",
+    description: "Collect nearby TEST.",
+    gain: "+1 TEST",
+    showButton: true,
+    buttonLabel: "Gather",
+    onAction: () => console.log("Gathering TEST...")
+});
+
+boxList.addBox({
+    id: "test_2",
+    title: "Gather TEST2",
+    description: "Collect nearby TEST.",
+    gain: "+1 TEST",
+    showButton: true,
+    buttonLabel: "Gather",
+    onAction: () => console.log("Gathering TEST...")
+});
+
 /*
 // Location of Gather boxes stack
 const gatherBarStackX = gatherBoxX + 2;

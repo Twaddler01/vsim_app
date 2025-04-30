@@ -377,3 +377,198 @@ boxList.addBox({
 
 Let me know if you want optional size/position logic or want to center content inside each box automatically.
 
+
+
+
+
+
+
+
+
+To isolate the gatherContainer from the camera panning and allow its content to scroll internally (when overflowing), you’ll need to:
+
+1. Prevent it from moving with the camera.
+
+
+2. Add a scrollable mask to clip overflowed children.
+
+
+3. Manually handle scrolling inside that box.
+
+
+
+Here’s how to achieve that:
+
+
+---
+
+Step 1: Prevent it from moving with camera panning
+
+By default, all Phaser objects scroll with the camera. To "fix" gatherContainer to the screen (like a UI HUD), set its scroll factor to 0:
+
+gatherContainer.setScrollFactor(0);
+
+
+---
+
+Step 2: Add a mask for overflow clipping
+
+Phaser containers don't automatically clip their contents. You must create a mask manually:
+
+const maskShape = this.make.graphics({});
+maskShape.fillStyle(0xffffff);
+maskShape.fillRect(10, 10, gatherBoxWidth, gatherBoxHeight);
+const mask = maskShape.createGeometryMask();
+gatherContainer.setMask(mask);
+
+
+---
+
+Step 3: Add manual scroll logic to the container
+
+You can use wheel input to scroll the contents vertically:
+
+this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY) => {
+    const bounds = gatherContainer.getBounds();
+    const pointerX = pointer.x;
+    const pointerY = pointer.y;
+
+    // Only scroll if pointer is inside the gather container area
+    if (pointerX >= bounds.x && pointerX <= bounds.right &&
+        pointerY >= bounds.y && pointerY <= bounds.bottom) {
+        
+        gatherContainer.y -= deltaY * 0.5;
+
+        // Clamp scroll
+        const minY = 10; // top bound
+        const maxY = 10 + Math.max(0, gatherBoxHeight - boxList.height); // bottom bound
+
+        gatherContainer.y = Phaser.Math.Clamp(gatherContainer.y, minY - boxList.height + gatherBoxHeight, minY);
+    }
+});
+
+> Replace boxList.height with the actual calculated height of the stacked boxes.
+
+
+
+
+---
+
+Would you like help modifying ActionBoxList so it returns its total height or emits an event when it overflows?
+
+
+
+
+
+
+
+To enable internal scrolling within your gatherContainer and prevent it from being affected by camera panning, you can enhance your ActionBoxList class to calculate its total height and emit an event when its content exceeds the visible area.  Here's how you can achieve this:
+
+
+---
+
+1. Calculate Total Height in ActionBoxList
+
+Modify your ActionBoxList class to compute the cumulative height of all its child boxes. This can be done by iterating over each child and summing their heights. 
+
+class ActionBoxList extends Phaser.GameObjects.Container {
+    constructor(scene, parentContainer, x, y, width, maxBoxes) {
+        super(scene, x, y);
+        this.scene = scene;
+        this.parentContainer = parentContainer;
+        this.width = width;
+        this.maxBoxes = maxBoxes;
+        this.boxes = [];
+
+        // Add this container to the parent
+        this.parentContainer.add(this);
+    }
+
+    addBox(config) {
+        const box = new ActionBox(this.scene, 0, this.getNextY(), this.width, 100, config);
+        this.add(box);
+        this.boxes.push(box);
+
+        // After adding, check if overflow occurs
+        this.checkOverflow();
+    }
+
+    getNextY() {
+        let y = 0;
+        this.boxes.forEach(box => {
+            y += box.height + 10; // Assuming 10px spacing
+        });
+        return y;
+    }
+
+    getTotalHeight() {
+        let totalHeight = 0;
+        this.boxes.forEach(box => {
+            totalHeight += box.height + 10; // Including spacing
+        });
+        return totalHeight;
+    }
+
+    checkOverflow() {
+        const totalHeight = this.getTotalHeight();
+        const containerHeight = this.parentContainer.height; // Assuming height is set
+
+        if (totalHeight > containerHeight) {
+            this.emit('overflow', { totalHeight, containerHeight });
+        }
+    }
+}
+
+
+
+
+---
+
+2. Listen for Overflow Event in MainScene
+
+In your MainScene, after creating the ActionBoxList, add an event listener to handle the overflow: 
+
+boxList.on('overflow', ({ totalHeight, containerHeight }) => {
+    console.log(`Overflow detected: totalHeight = ${totalHeight}, containerHeight = ${containerHeight}`);
+    // Implement scroll logic here
+});
+
+
+
+
+---
+
+3. Implement Scroll Logic
+
+To allow users to scroll through the overflowing content within gatherContainer, you can add input listeners (e.g., mouse wheel or touch drag) to adjust the position of the ActionBoxList accordingly. 
+
+this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY) => {
+    const bounds = gatherContainer.getBounds();
+    const pointerX = pointer.x;
+    const pointerY = pointer.y;
+
+    // Only scroll if pointer is inside the gather container area
+    if (pointerX >= bounds.x && pointerX <= bounds.right &&
+        pointerY >= bounds.y && pointerY <= bounds.bottom) {
+        
+        boxList.y -= deltaY * 0.5;
+
+        // Clamp scroll
+        const minY = 0; // Adjust as needed
+        const maxY = Math.max(0, boxList.getTotalHeight() - gatherBoxHeight);
+
+        boxList.y = Phaser.Math.Clamp(boxList.y, -maxY, minY);
+    }
+});
+
+
+
+This approach ensures that the gatherContainer remains stationary during camera panning, and its internal content can be scrolled independently when it overflows. 
+
+
+---
+
+For more advanced UI components like scrollable panels, you might consider using plugins such as RexUI's ScrollablePanel, which provides built-in support for scrollable containers in Phaser 3. 
+
+Let me know if you need further assistance with implementing the scroll logic or integrating additional features.
+
