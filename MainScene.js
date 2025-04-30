@@ -198,7 +198,15 @@ boxList.addBox({
     onAction: () => console.log("Gathering twigs...")
 });
 
-
+boxList.addBox({
+    id: "pebbles",
+    title: "Gather Pebbles",
+    description: "Collect nearby pebbles.",
+    gain: "+1 Pebbles",
+    showButton: true,
+    buttonLabel: "Gather",
+    onAction: () => console.log("Gathering pebbles...")
+});
 /*
 // Location of Gather boxes stack
 const gatherBarStackX = gatherBoxX + 2;

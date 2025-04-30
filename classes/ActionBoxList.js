@@ -70,7 +70,7 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         let currentY = this.startY;
         for (const { box } of this.boxes) {
             box.setPosition(this.startX, currentY);
-            currentY += box.displayHeight + this.spacing;
+            currentY += 150 + this.spacing; // use known box height
         }
     }
 }
