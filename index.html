@@ -1,0 +1,22 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>vsim_app</title>
+    <script src="phaser.js"></script>
+    <script src="main.js" type="module"></script>
+    <!-- <link rel="stylesheet" type="text/css" href="styles.css"/> -->
+</head>
+<div id="consoleLog"></div>
+<script src="console.js" type="text/javascript"></script>
+<div id="debugButtons"></div>
+<button id="clearStorageBtn">Clear Local Storage</button>
+<button id="tempAction">Temp Action</button>
+<script>
+    document.getElementById('clearStorageBtn').addEventListener("click", () => {
+        localStorage.clear();
+        console.log('Local storage cleared...');
+        location.reload();
+    });
+</script>
+</body>
+</html>
