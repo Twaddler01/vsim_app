@@ -69,16 +69,8 @@ class MainScene extends Phaser.Scene {
             this.isDragging = false;
         });
     
-        this.input.on('pointermove', (pointer) => {
-            if (this.isDragging) {
-                this.cameras.main.scrollX -= (pointer.x - this.dragStartX);
-                this.cameras.main.scrollY -= (pointer.y - this.dragStartY);
-                this.dragStartX = pointer.x;
-                this.dragStartY = pointer.y;
-            }
-        });
-  
         // Start here
+        this.isPointerInGatherContainer = false;
         this.input.addPointer(2); // Enable multi-touch
         this.createUI();
 
@@ -96,11 +88,14 @@ class MainScene extends Phaser.Scene {
         this.cameraZoom = 1;
         this.pinchStartDistance = null;
         this.cameras.main.setZoom(this.cameraZoom);
+
+        this.input.on('pointermove', (pointer) => {
+            // Ignore all camera interaction if touch started in gatherContainer
+            if (this.isPointerInGatherContainer) return;
         
-        // Listen for pinch gestures
-        this.input.on('pointermove', () => {
             const pointers = this.input.manager.pointers.filter(p => p.isDown);
         
+            // Handle pinch zoom
             if (pointers.length === 2) {
                 const [p1, p2] = pointers;
                 const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
@@ -115,12 +110,18 @@ class MainScene extends Phaser.Scene {
                     this.cameraZoom = Phaser.Math.Clamp(this.cameraZoom * zoomFactor, this.minZoom, 5);
                     this.cameras.main.setZoom(this.cameraZoom);
                 }
-            } else {
+            } 
+            // Handle drag-to-pan
+            else if (pointers.length === 1 && pointer.isDown) {
+                const dragSpeed = 1 / this.cameraZoom;
+                this.cameras.main.scrollX -= pointer.velocity.x * dragSpeed;
+                this.cameras.main.scrollY -= pointer.velocity.y * dragSpeed;
+                this.pinchStartDistance = null; // cancel zoom state
+            } 
+            else {
                 this.pinchStartDistance = null;
             }
         });
-    //
-    
 
 
     }
@@ -137,11 +138,13 @@ class MainScene extends Phaser.Scene {
         this.graphics.fillRect(0, 0, width, height);
         this.graphics.setDepth(-1); // -1 ensures it's behind other game elements
 
-    // LAYOUT AREAS
+// *** LAYOUT AREAS
+
+// *** gatherBox
 const gatherBoxX = 0;
 const gatherBoxY = 0;
 const gatherBoxWidth = 400;
-const gatherBoxHeight = 600;
+const gatherBoxHeight = 600; //// /12
 
 // Create the container to group the box and its contents
 const gatherContainer = this.add.container(10, 10); // Top-left position
@@ -155,6 +158,8 @@ gatherBoxRect.setStrokeStyle(2, 0xffffff);
 const gatherBoxRectTitle = this.add.rectangle(gatherBoxRect.x, gatherBoxRect.y, gatherBoxWidth, gatherBoxHeight / 12, UI_STYLES.titleBoxColor)
     .setOrigin(0);
 gatherBoxRectTitle.setStrokeStyle(2, 0xffffff);
+// Space of title area
+this.gatherBoxRectTitleSpace = gatherBoxHeight / 12 + 4; // Add border
 
 // Title text centered at the top
 const titleText = this.add.text(
@@ -167,17 +172,6 @@ const titleText = this.add.text(
     }
 ).setOrigin(0.5, 0); // Center X, top Y
 
-// You can now add other contents below titleText if needed
-/*const contentText = this.add.text(
-    20, 60,
-    "Resource list goes here...",
-    {
-        fontSize: UI_STYLES.fontSizeSmall,
-        color: UI_STYLES.textColor,
-        wordWrap: { width: gatherBoxWidth - 40 }
-    }
-);*/
-
 // Add everything to container
 gatherContainer.add([gatherBoxRect, gatherBoxRectTitle, titleText]);
 
@@ -185,10 +179,14 @@ gatherContainer.add([gatherBoxRect, gatherBoxRectTitle, titleText]);
 const gatherBarStackX = gatherBoxX + 2;
 const gatherBarStackY = gatherBoxHeight / 12 + 2;
 const gatherBarStackW = gatherBoxWidth - 4;
+this.startY = gatherBarStackY;
 
 const boxList = new ActionBoxList(this, gatherContainer, gatherBarStackX, gatherBarStackY, gatherBarStackW, 6);
 
-boxList.addBox({
+//// WIP: JSON
+
+
+/*boxList.addBox({
     id: "twigs",
     title: "Gather Twigs",
     description: "Collect nearby twigs.",
@@ -207,46 +205,73 @@ boxList.addBox({
     buttonLabel: "Gather",
     onAction: () => console.log("Gathering pebbles...")
 });
-/*
-// Location of Gather boxes stack
-const gatherBarStackX = gatherBoxX + 2;
-const gatherBarStackY = gatherBoxHeight / 12 + 2;
-const gatherBarStackW = gatherBoxWidth - 4;
-const gatherBarStackH = 150;
 
-const box = new ActionBox(this, gatherBarStackX, gatherBarStackY, gatherBarStackW, gatherBarStackH, {
-    title: "Gather Twigs",
-    description: "Collect nearby twigs from the ground.",
-    gain: "Twigs",
+boxList.addBox({
+    id: "test_1",
+    title: "Gather TEST1",
+    description: "Collect nearby TEST.",
+    gain: "+1 TEST",
     showButton: true,
     buttonLabel: "Gather",
-    onAction: () => console.log("Gathering...")
+    onAction: () => console.log("Gathering TEST...")
 });
-gatherContainer.add(box);
-*/
 
+boxList.addBox({
+    id: "test_2",
+    title: "Gather TEST2",
+    description: "Collect nearby TEST.",
+    gain: "+1 TEST",
+    showButton: true,
+    buttonLabel: "Gather",
+    onAction: () => console.log("Gathering TEST...")
+});*/
 
-    /*const boxSize = 300;
-    const spacing = 20;
-    const startX = 20;
-    const startY = 20;
-    
-    for (let row = 0; row < 3; row++) {
-        for (let col = 0; col < 3; col++) {
-            const x = startX + col * (boxSize + spacing);
-            const y = startY + row * (boxSize + spacing);
-            const box = this.add.rectangle(x, y, boxSize, boxSize, UI_STYLES.mainBoxColor).setOrigin(0);
-            box.setStrokeStyle(2, 0xffffff);
-        }
-    }*/
-
-
-
-
-
-
+    // DEBUG
+    this.debugContainer = this.add.container(500, 500);
+    this.debugUI(boxList); 
 
     }
+
+    // DEBUG BUTTONS
+    debugUI(boxList) {
+        this.addTextButton(0, 0, 'Add test_3 Box', () => {
+            //
+            boxList.addBox({
+                id: "test_3",
+                title: "Gather TEST_ADD1",
+                description: "Collect nearby TEST.",
+                gain: "+1 TEST",
+                showButton: true,
+                buttonLabel: "Gather",
+                onAction: () => console.log("Gathering TEST...")
+            });
+            //
+        });
+    
+        this.addTextButton(0, 30, 'Remove test_3 Box', () => {
+            //
+            //boxList.removeBoxById("test_3");
+            boxList.clearAll();
+            //
+        });
+    }
+    
+    addTextButton(x, y, label, callback) {
+        const btn = this.add.text(x, y, label, {
+            fontSize: '18px',
+            backgroundColor: '#222',
+            color: '#fff',
+            padding: { x: 10, y: 5 },
+        }).setInteractive();
+    
+        btn.on('pointerdown', callback);
+        this.debugContainer.add(btn); // optional: add button to container
+        return btn;
+    }
+    // Usage
+    //this.debugContainer = this.add.container(100, 100);
+    //this.debugUI(); 
+
 } // MainScene
 
 // Export default MainScene;

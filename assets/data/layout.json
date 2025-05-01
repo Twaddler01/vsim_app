@@ -1,0 +1,20 @@
+{
+  "gather": [
+    {
+      "id": "twigs",
+      "title": "Gather Twigs",
+      "description": "Collect nearby twigs.",
+      "gain": "+1 Twig",
+      "showButton": true,
+      "buttonLabel": "Gather"
+    },
+    {
+      "id": "pebbles",
+      "title": "Gather Pebbles",
+      "description": "Collect nearby pebbles.",
+      "gain": "+1 Pebble",
+      "showButton": true,
+      "buttonLabel": "Gather"
+    }
+  ]
+}
