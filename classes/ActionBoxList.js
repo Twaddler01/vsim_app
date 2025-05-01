@@ -159,32 +159,18 @@ scene.input.on('pointermove', (pointer) => {
         }
     }
 
-
-
-updateMask() {
-    const bounds = this.container.getBounds(); // gatherContainer or the clipping region
-
-    // Dynamically calculate the visible mask height
-    this.maskHeight = bounds.height - this.scene.gatherBoxRectTitleSpace; // This is the visible height of the gatherContainer
-
-    // Create mask
-    const maskShape = this.scene.make.graphics({ x: 0, y: 0, add: false });
-    maskShape.fillStyle(0xffffff);
-    maskShape.fillRect(bounds.x, this.startY + 10, bounds.width, this.maskHeight); // Updated with dynamic height
-    const mask = maskShape.createGeometryMask();
-
-    this.scrollContainer.setMask(mask);
-}
-
-/*
     updateMask() {
-        const bounds = this.container.getBounds(); // world-space bounds
-        const contentStartY = this.container.y + this.startY;
+        const bounds = this.container.getBounds(); // gatherContainer or the clipping region
     
+        // Dynamically calculate the visible mask height
+        this.maskHeight = bounds.height - this.scene.gatherBoxRectTitleSpace; // This is the visible height of the gatherContainer
+    
+        // Create mask
         const maskShape = this.scene.make.graphics({ x: 0, y: 0, add: false });
         maskShape.fillStyle(0xffffff);
-        maskShape.fillRect(bounds.x, contentStartY, bounds.width, bounds.height - this.startY);
+        maskShape.fillRect(bounds.x, this.startY + 10, bounds.width, this.maskHeight); // Updated with dynamic height
         const mask = maskShape.createGeometryMask();
+    
         this.scrollContainer.setMask(mask);
-    */
+    }
 }

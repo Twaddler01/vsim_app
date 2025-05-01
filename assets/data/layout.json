@@ -12,7 +12,23 @@
       "id": "pebbles",
       "title": "Gather Pebbles",
       "description": "Collect nearby pebbles.",
-      "gain": "+1 Pebble",
+      "gain": "+1 Pebbles",
+      "showButton": true,
+      "buttonLabel": "Gather"
+    },
+    {
+      "id": "test_1",
+      "title": "Gather TEST1",
+      "description": "Collect nearby TEST.",
+      "gain": "+1 TEST",
+      "showButton": true,
+      "buttonLabel": "Gather"
+    },
+    {
+      "id": "test_2",
+      "title": "Gather TEST2",
+      "description": "Collect nearby TEST.",
+      "gain": "+1 TEST",
       "showButton": true,
       "buttonLabel": "Gather"
     }

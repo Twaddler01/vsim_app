@@ -184,7 +184,7 @@ this.startY = gatherBarStackY;
 const boxList = new ActionBoxList(this, gatherContainer, gatherBarStackX, gatherBarStackY, gatherBarStackW, 6);
 
 //// WIP: JSON
-
+loadBoxesFromJson(boxList, 'gather');
 
 /*boxList.addBox({
     id: "twigs",
@@ -250,8 +250,8 @@ boxList.addBox({
     
         this.addTextButton(0, 30, 'Remove test_3 Box', () => {
             //
-            //boxList.removeBoxById("test_3");
-            boxList.clearAll();
+            boxList.removeBoxById("test_3");
+            //boxList.clearAll();
             //
         });
     }
@@ -273,6 +273,51 @@ boxList.addBox({
     //this.debugUI(); 
 
 } // MainScene
+
+// FUNCTIONS
+async function loadBoxesFromJson(boxList, section = 'gather') {
+  const response = await fetch('assets/data/layout.json');
+  const defaults = await response.json();
+
+  const overrides = JSON.parse(localStorage.getItem('savedOverrides') || '{}');
+  const boxes = defaults[section] || [];
+
+  boxes.forEach(box => {
+    const merged = { ...box, ...(overrides[box.id] || {}) };
+    boxList.addBox({
+      ...merged,
+      onAction: () => console.log(`Gathering ${merged.title?.toLowerCase() || merged.id}`)
+    });
+  });
+}
+
+async function loadAndApplyBoxes(section, boxList) {
+    const response = await fetch('layout.json');
+    const defaults = await response.json();
+
+    const overrides = JSON.parse(localStorage.getItem('savedOverrides') || '{}');
+    const sectionDefaults = defaults[section] || [];
+
+    const merged = sectionDefaults.map(box => ({
+        ...box,
+        ...(overrides[box.id] || {}),
+        onAction: () => console.log(`Gathering ${box.id}...`)
+    }));
+
+    merged.forEach(config => boxList.addBox(config));
+}
+
+function updateBoxOverride(id, changes) {
+  const overrides = JSON.parse(localStorage.getItem('savedOverrides') || '{}');
+  overrides[id] = { ...(overrides[id] || {}), ...changes };
+  localStorage.setItem('savedOverrides', JSON.stringify(overrides));
+}
+// Usage
+//updateBoxOverride("twigs", { gain: "+2 Twigs", buttonLabel: "Grab Twigs" });
+
+// STORAGE USAGE
+//this.boxList = new ActionBoxList(this, someContainer, 0, 0, 400);
+//loadBoxesFromJson(this.boxList);
 
 // Export default MainScene;
 export default MainScene;
