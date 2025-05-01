@@ -69,15 +69,6 @@ class MainScene extends Phaser.Scene {
             this.isDragging = false;
         });
     
-        this.input.on('pointermove', (pointer) => {
-            if (this.isDragging) {
-                this.cameras.main.scrollX -= (pointer.x - this.dragStartX);
-                this.cameras.main.scrollY -= (pointer.y - this.dragStartY);
-                this.dragStartX = pointer.x;
-                this.dragStartY = pointer.y;
-            }
-        });
-  
         // Start here
         this.isPointerInGatherContainer = false;
         this.input.addPointer(2); // Enable multi-touch
@@ -98,49 +89,13 @@ class MainScene extends Phaser.Scene {
         this.pinchStartDistance = null;
         this.cameras.main.setZoom(this.cameraZoom);
 
-
-this.input.on('pointermove', (pointer) => {
-    // Ignore all camera interaction if touch started in gatherContainer
-    if (this.isPointerInGatherContainer) return;
-
-    const pointers = this.input.manager.pointers.filter(p => p.isDown);
-
-    // Handle pinch zoom
-    if (pointers.length === 2) {
-        const [p1, p2] = pointers;
-        const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
-
-        if (this.pinchStartDistance === null) {
-            this.pinchStartDistance = dist;
-        } else {
-            const delta = dist - this.pinchStartDistance;
-            this.pinchStartDistance = dist;
-
-            const zoomFactor = 1 + delta * 0.0025;
-            this.cameraZoom = Phaser.Math.Clamp(this.cameraZoom * zoomFactor, this.minZoom, 5);
-            this.cameras.main.setZoom(this.cameraZoom);
-        }
-    } 
-    // Handle drag-to-pan
-    else if (pointers.length === 1 && pointer.isDown) {
-        const dragSpeed = 1 / this.cameraZoom;
-        this.cameras.main.scrollX -= pointer.velocity.x * dragSpeed;
-        this.cameras.main.scrollY -= pointer.velocity.y * dragSpeed;
-        this.pinchStartDistance = null; // cancel zoom state
-    } 
-    else {
-        this.pinchStartDistance = null;
-    }
-});
-
-
-/*
-        // Listen for pinch gestures
-        this.input.on('pointermove', () => {
+        this.input.on('pointermove', (pointer) => {
+            // Ignore all camera interaction if touch started in gatherContainer
             if (this.isPointerInGatherContainer) return;
-
+        
             const pointers = this.input.manager.pointers.filter(p => p.isDown);
         
+            // Handle pinch zoom
             if (pointers.length === 2) {
                 const [p1, p2] = pointers;
                 const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
@@ -155,12 +110,18 @@ this.input.on('pointermove', (pointer) => {
                     this.cameraZoom = Phaser.Math.Clamp(this.cameraZoom * zoomFactor, this.minZoom, 5);
                     this.cameras.main.setZoom(this.cameraZoom);
                 }
-            } else {
+            } 
+            // Handle drag-to-pan
+            else if (pointers.length === 1 && pointer.isDown) {
+                const dragSpeed = 1 / this.cameraZoom;
+                this.cameras.main.scrollX -= pointer.velocity.x * dragSpeed;
+                this.cameras.main.scrollY -= pointer.velocity.y * dragSpeed;
+                this.pinchStartDistance = null; // cancel zoom state
+            } 
+            else {
                 this.pinchStartDistance = null;
             }
-        });*/
-    //
-    
+        });
 
 
     }
@@ -177,11 +138,11 @@ this.input.on('pointermove', (pointer) => {
         this.graphics.fillRect(0, 0, width, height);
         this.graphics.setDepth(-1); // -1 ensures it's behind other game elements
 
-    // LAYOUT AREAS
+// LAYOUT AREAS
 const gatherBoxX = 0;
 const gatherBoxY = 0;
 const gatherBoxWidth = 400;
-const gatherBoxHeight = 600;
+const gatherBoxHeight = 600; //// /12
 
 // Create the container to group the box and its contents
 const gatherContainer = this.add.container(10, 10); // Top-left position
@@ -195,6 +156,7 @@ gatherBoxRect.setStrokeStyle(2, 0xffffff);
 const gatherBoxRectTitle = this.add.rectangle(gatherBoxRect.x, gatherBoxRect.y, gatherBoxWidth, gatherBoxHeight / 12, UI_STYLES.titleBoxColor)
     .setOrigin(0);
 gatherBoxRectTitle.setStrokeStyle(2, 0xffffff);
+this.gatherBoxRectTitleSpace = gatherBoxHeight / 12 + 4; // Add border
 
 // Title text centered at the top
 const titleText = this.add.text(
@@ -207,17 +169,6 @@ const titleText = this.add.text(
     }
 ).setOrigin(0.5, 0); // Center X, top Y
 
-// You can now add other contents below titleText if needed
-/*const contentText = this.add.text(
-    20, 60,
-    "Resource list goes here...",
-    {
-        fontSize: UI_STYLES.fontSizeSmall,
-        color: UI_STYLES.textColor,
-        wordWrap: { width: gatherBoxWidth - 40 }
-    }
-);*/
-
 // Add everything to container
 gatherContainer.add([gatherBoxRect, gatherBoxRectTitle, titleText]);
 
@@ -225,6 +176,7 @@ gatherContainer.add([gatherBoxRect, gatherBoxRectTitle, titleText]);
 const gatherBarStackX = gatherBoxX + 2;
 const gatherBarStackY = gatherBoxHeight / 12 + 2;
 const gatherBarStackW = gatherBoxWidth - 4;
+this.startY = gatherBarStackY;
 
 const boxList = new ActionBoxList(this, gatherContainer, gatherBarStackX, gatherBarStackY, gatherBarStackW, 6);
 

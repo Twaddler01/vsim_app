@@ -18,29 +18,18 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         this.container.add(this.scrollContainer);
 
         // Create mask based on desired visible area
-        const visibleHeight = container.height || 400; // fallback value
+        /*const visibleHeight = container.height || 400; // fallback value
         const maskGraphics = scene.make.graphics({ x: 0, y: 0, add: false });
         maskGraphics.fillStyle(0xffffff);
         maskGraphics.fillRect(startX, startY, width, visibleHeight - startY); // mask only from content start
         const mask = maskGraphics.createGeometryMask();
-        this.scrollContainer.setMask(mask);
-
+        this.scrollContainer.setMask(mask);*/
+this.updateMask();
         // Dragging state
         this.isDragging = false;
         this.dragStartY = 0;
         this.containerStartY = 0;
 
-scene.input.on('pointerdown', (pointer) => {
-    const inBounds = this.isPointerInBounds(pointer);
-    this.scene.isPointerInGatherContainer = inBounds;
-
-    if (inBounds) {
-        this.isDragging = true;
-        this.dragStartY = pointer.y;
-        this.containerStartY = this.scrollContainer.y;
-    }
-});
-/*
         scene.input.on('pointerdown', (pointer) => {
             if (this.isPointerInBounds(pointer)) {
                 this.scene.isPointerInGatherContainer = true;
@@ -51,8 +40,25 @@ scene.input.on('pointerdown', (pointer) => {
                 this.scene.isPointerInGatherContainer = false;
             }
         });
-*/
 
+scene.input.on('pointermove', (pointer) => {
+    if (!this.isDragging) return;
+
+    const deltaY = pointer.y - this.dragStartY;
+    let newY = this.containerStartY + deltaY;
+
+    const contentHeight = this.getContentHeight();
+    const visibleHeight = this.maskHeight; // Use the dynamic mask height
+
+    const minY = Math.min(0, visibleHeight - contentHeight); // Updated to use visible height dynamically
+    const maxY = 0;
+
+    this.scrollContainer.y = Phaser.Math.Clamp(newY, minY, maxY);
+});
+
+
+
+/*
         scene.input.on('pointermove', (pointer) => {
             if (!this.isDragging) return;
 
@@ -64,34 +70,34 @@ scene.input.on('pointerdown', (pointer) => {
             const maxY = 0;
 
             this.scrollContainer.y = Phaser.Math.Clamp(newY, minY, maxY);
-        });
+        });*/
 
-scene.input.on('pointerup', () => {
-    this.isDragging = false;
-    this.scene.isPointerInGatherContainer = false;
-});
-/*
         scene.input.on('pointerup', () => {
             this.isDragging = false;
             this.scene.isPointerInGatherContainer = false;
         });
-*/
+
         scene.add.existing(this);
     }
 
     isPointerInBounds(pointer) {
-        const localY = pointer.y;
-        const containerBounds = this.container.getBounds();
+        const worldPoint = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        const bounds = this.container.getBounds(); // Still in world space
+    
         return (
-            pointer.x >= containerBounds.x &&
-            pointer.x <= containerBounds.x + containerBounds.width &&
-            localY >= containerBounds.y + this.startY &&
-            localY <= containerBounds.y + containerBounds.height
+            worldPoint.x >= bounds.x &&
+            worldPoint.x <= bounds.x + bounds.width &&
+            worldPoint.y >= bounds.y &&
+            worldPoint.y <= bounds.y + bounds.height
         );
     }
 
     getContentHeight() {
-        return this.boxes.length * (150 + this.spacing);
+        if (this.boxes.length === 0) return 0;
+    
+        const totalBoxHeight = this.boxes.length * 150;
+        const totalSpacing = (this.boxes.length - 1) * this.spacing;
+        return totalBoxHeight + totalSpacing;
     }
 
     addBox(config) {
@@ -152,4 +158,33 @@ scene.input.on('pointerup', () => {
             currentY += 150 + this.spacing;
         }
     }
+
+
+
+updateMask() {
+    const bounds = this.container.getBounds(); // gatherContainer or the clipping region
+
+    // Dynamically calculate the visible mask height
+    this.maskHeight = bounds.height - this.scene.gatherBoxRectTitleSpace; // This is the visible height of the gatherContainer
+
+    // Create mask
+    const maskShape = this.scene.make.graphics({ x: 0, y: 0, add: false });
+    maskShape.fillStyle(0xffffff);
+    maskShape.fillRect(bounds.x, this.startY + 10, bounds.width, this.maskHeight); // Updated with dynamic height
+    const mask = maskShape.createGeometryMask();
+
+    this.scrollContainer.setMask(mask);
+}
+
+/*
+    updateMask() {
+        const bounds = this.container.getBounds(); // world-space bounds
+        const contentStartY = this.container.y + this.startY;
+    
+        const maskShape = this.scene.make.graphics({ x: 0, y: 0, add: false });
+        maskShape.fillStyle(0xffffff);
+        maskShape.fillRect(bounds.x, contentStartY, bounds.width, bounds.height - this.startY);
+        const mask = maskShape.createGeometryMask();
+        this.scrollContainer.setMask(mask);
+    */
 }
