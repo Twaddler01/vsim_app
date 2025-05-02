@@ -843,3 +843,227 @@ data.forEach(entry => {
 So yes — using getters/setters is perfectly compatible with saving to and loading from localStorage, and they help keep your class logic clean and centralized.
 
 Would you like help setting up this save/load pattern?
+
+
+
+
+To access and update the ActionBox settings from your ActionBoxList class (either individually or all at once), your setup is already close. However, there are a few enhancements you’ll need:
+
+1. Store gainText in a property
+
+Right now gainText is not assigned to this.gainText, so updateGainText() will fail. Add this line in the constructor where you create gainText:
+
+this.gainText = gainText;
+
+2. Allow updates to individual ActionBoxes
+
+This is already handled with:
+
+updateBoxById(id, updateFn) {
+    const box = this.getBoxById(id);
+    if (box && typeof updateFn === 'function') {
+        updateFn(box);
+    }
+}
+
+Example usage:
+
+actionBoxList.updateBoxById('box1', (box) => {
+    box.gain = 3;
+    box.gainTextValue = 'Coin';
+});
+
+3. Add method to update all boxes
+
+Add this method to ActionBoxList:
+
+updateAllBoxes(updateFn) {
+    for (const { box } of this.boxes) {
+        if (typeof updateFn === 'function') {
+            updateFn(box);
+        }
+    }
+}
+
+Usage example:
+
+actionBoxList.updateAllBoxes((box) => {
+    box.gain = 2;
+    box.gainTextValue = 'Gold';
+});
+
+Optional: Add .setTitle(), .setDescription(), etc.
+
+If you want more convenience, you can add methods in ActionBox like:
+
+setTitle(newTitle) {
+    this.titleText.setText(newTitle);
+}
+
+…but that’s only needed if you plan to make changes often and want clearer APIs.
+
+Would you like a method to dynamically update the ActionBox’s button as well (label, callback, or visibility)?
+
+
+
+
+addBox(config) {
+    const { id } = config;
+    if (id && this.boxMap.has(id)) {
+        console.warn(`Box with ID '${id}' already exists.`);
+        return null;
+    }
+
+    const boxWidth = this.width;
+    const boxHeight = 150;
+
+    // Clone and normalize config to ensure defaults match constructor behavior
+    const normalizedConfig = {
+        gain: "+1 Gain",  // fallback default gain string
+        showButton: false,
+        ...config
+    };
+
+    // Only add default onAction if not already provided
+    if (!normalizedConfig.onAction) {
+        normalizedConfig.onAction = () => {
+            // ActionBox constructor will set _gain and _gainTextValue
+            const boxEntry = this.boxMap.get(id);
+            if (boxEntry) {
+                const box = boxEntry.box;
+                box._count += box._gain;
+                console.log(`Gathered +${box._gain} ${box._gainTextValue}, count is now ${box._count}`);
+                box.updateGainText?.(); // optional if you later show count
+            }
+        };
+    }
+
+    const box = new ActionBox(this.scene, 0, 0, boxWidth, boxHeight, normalizedConfig);
+    this.scrollContainer.add(box);
+
+    const entry = { id, box };
+    this.boxes.push(entry);
+    if (id) this.boxMap.set(id, entry);
+    this.repositionBoxes();
+
+    return box;
+}
+
+
+
+
+
+async function loadLayoutFromJson(object, section) {
+    const response = await fetch('assets/data/layout.json');
+    const data = await response.json();
+    const loadedData = data[section] || [];
+
+    // Load saveData
+    const saveData = JSON.parse(localStorage.getItem('gameState')) || [];
+    console.log('saveData: ' + JSON.stringify(saveData));
+
+    // Add boxes from saveData
+    saveData.forEach(save => {
+        // Try to find matching data from original layout (optional)
+        const baseData = loadedData.find(d => d.id === save.id) || {};
+        object.addBox({
+            id: save.id,
+            active: save.active,
+            gain: save.gain ?? baseData.gain ?? 1,
+            count: save.count ?? baseData.count ?? 0,
+            ...baseData // merge any extra data from layout.json
+        });
+    });
+}
+
+
+
+
+Perfect — since your layout is already working and the "gather" section is defined, here's a complete working setup that:
+
+Loads from layout.json,
+
+Checks both active: true in JSON and active in saved data,
+
+Uses activateBox(id) to load by id and mark it active for saving,
+
+Preserves saved gain and count values.
+
+
+
+---
+
+loadLayoutFromJson function
+
+async function loadLayoutFromJson(object, section) {
+    const response = await fetch('assets/data/layout.json');
+    const data = await response.json();
+    const loadedData = data[section] || [];
+
+    // Save config list to object for access in activateBox
+    object.boxConfigs = loadedData;
+
+    // Load save data from localStorage
+    const saveData = JSON.parse(localStorage.getItem('gameState')) || [];
+
+    loadedData.forEach(jsonBox => {
+        const saveBox = saveData.find(save => save.id === jsonBox.id);
+        const isActive = jsonBox.active || (saveBox && saveBox.active);
+
+        if (isActive) {
+            const box = object.activateBox(jsonBox.id);
+
+            if (box && saveBox) {
+                // Apply save state (like gain/count) to the box
+                box.gain = saveBox.gain ?? box.gain;
+                box.count = saveBox.count ?? box.count;
+            }
+        }
+    });
+}
+
+
+---
+
+activateBox(id) method
+
+Add this to your boxList or layout manager class:
+
+activateBox(id) {
+    if (this.boxMap.has(id)) {
+        console.warn(`Box '${id}' already active.`);
+        return this.boxMap.get(id).box;
+    }
+
+    if (!this.boxConfigs) {
+        console.error('boxConfigs not loaded. Run loadLayoutFromJson first.');
+        return null;
+    }
+
+    const config = this.boxConfigs.find(c => c.id === id);
+    if (!config) {
+        console.error(`Box config for '${id}' not found in layout.`);
+        return null;
+    }
+
+    // Clone config and ensure it's marked active
+    const boxData = { ...config, active: true };
+    const box = this.addBox(boxData);
+    if (box) {
+        box.active = true;
+    }
+    return box;
+}
+
+
+---
+
+Example usage
+
+// On scene create/init
+await loadLayoutFromJson(boxList, 'gather');
+
+Now, all active boxes in layout.json or saved as active: true will load correctly, and future saves will preserve their status.
+
+Would you like help adding a dev button like “Activate Box: twigs” using activateBox()?
+

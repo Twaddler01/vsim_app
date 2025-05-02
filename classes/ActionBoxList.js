@@ -78,6 +78,7 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         return totalBoxHeight + totalSpacing;
     }
 
+    // Manually add boxes without JSON
     addBox(config) {
         const { id } = config;
         if (id && this.boxMap.has(id)) {
@@ -117,6 +118,33 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         }
     }
 
+    // Mark JSON boxes active and add them to UI
+    activateBox(id) {
+        if (this.boxMap.has(id)) {
+            console.warn(`Box '${id}' already active.`);
+            return this.boxMap.get(id).box;
+        }
+    
+        if (!this.boxConfigs) {
+            console.error('boxConfigs not loaded. Run loadLayoutFromJson first.');
+            return null;
+        }
+    
+        const config = this.boxConfigs.find(c => c.id === id);
+        if (!config) {
+            console.error(`Box config for '${id}' not found in layout.`);
+            return null;
+        }
+    
+        // Clone config and ensure it's marked active
+        const boxData = { ...config, active: true };
+        const box = this.addBox(boxData);
+        if (box) {
+            box.active = true;
+        }
+        return box;
+    }
+
     getBoxById(id) {
         const entry = this.boxMap.get(id);
         return entry ? entry.box : null;
@@ -128,6 +156,24 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
             updateFn(box);
         }
     }
+    // USAGE
+    //actionBoxList.updateBoxById("twigs", (box) => {
+    //    box.gain = 2;
+    //    box.gainTextValue = 'Gold';
+    //});
+
+    updateAllBoxes(updateFn) {
+        for (const { box } of this.boxes) {
+            if (typeof updateFn === 'function') {
+                updateFn(box);
+            }
+        }
+    }
+    // USAGE
+    //actionBoxList.updateAllBoxes((box) => {
+    //    box.gain = 2;
+    //    box.gainTextValue = 'Gold';
+    //});
 
     clearAll() {
         for (const { box } of this.boxes) {

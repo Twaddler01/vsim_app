@@ -7,20 +7,26 @@ export default class ActionBox extends Phaser.GameObjects.Container {
         super(scene, x, y);
 
         const {
+            active = false,
             id = "",
             title = "Untitled",
             description = "",
             gain = "Gain",
             showButton = false,
             buttonLabel = "Do It",
-            onAction = () => {}
+            onAction = () => { 
+                this._count += this._gain;
+                console.log('Gathering +' + this._gain + ' ' + this._gainTextValue + ' Count: ' + this._count);
+            }
         } = config;
 
         // Mutable states
         this._gain = 1;
+        this._count = 0;
         // get/set variables
         this._id = id;
         this._gainTextValue = gain;
+        this._active = active;
 
         // Background
         const bg = scene.add.rectangle(0, 0, width, height, STYLES.actionBoxColor).setOrigin(0);
@@ -44,11 +50,12 @@ export default class ActionBox extends Phaser.GameObjects.Container {
 
         // Gain
         const gainY = descText.y + descText.height + 10;
-        const gainText = scene.add.text(20, gainY, gain, {
+        this.gainText = scene.add.text(20, gainY, gain, {
             fontSize: '14px',
             color: 'lightgreen'
         });
-        this.add(gainText);
+        this.gainText.setText(`+${this._gain} ${this._gainTextValue}`);
+        this.add(this.gainText);
 
         // Action Button
         if (showButton) {
@@ -74,23 +81,39 @@ export default class ActionBox extends Phaser.GameObjects.Container {
     get gain() {
         return this._gain;
     }
-
-    set gain(val) {
-        this._gain = val;
-        this.updateGainText();
+    
+    get count() {
+        return this._count;
+    }
+    
+    get active() {
+        return this._active;
     }
 
     get gainTextValue() {
         return this._gainTextValue;
     }
 
+    set gain(val) {
+        this._gain = val;
+        this.updateGainText();
+    }
+
     set gainTextValue(val) {
         this._gainTextValue = val;
         this.updateGainText();
     }
+    
+    set count(val) {
+        this._count = val;
+        // update count next
+    }
+    
+    set active(val) {
+        this._active = true;
+    }
 
     updateGainText() {
-        this._gain = 2;
         let label = this._gainTextValue;
         if (this._gain > 1) {
             label += 's';

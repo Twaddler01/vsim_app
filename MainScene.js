@@ -187,6 +187,7 @@ const boxList = new ActionBoxList(this, gatherContainer, gatherBarStackX, gather
 loadLayoutFromJson(boxList, 'gather');
 // *** END gatherBox
 
+
     // DEBUG
     this.debugContainer = this.add.container(500, 500);
     this.debugUI(boxList); 
@@ -197,24 +198,43 @@ loadLayoutFromJson(boxList, 'gather');
     debugUI(boxList) {
         this.addTextButton(0, 0, 'Add test_3 Box', () => {
             //
-            boxList.addBox({
-                id: "test_3",
-                title: "Gather TEST_ADD1",
-                description: "Collect nearby TEST.",
-                gain: "+1 TEST",
-                showButton: true,
-                buttonLabel: "Gather",
-                onAction: () => console.log("Gathering TEST...")
-            });
+            // flag true
+                const box = boxList.activateBox('test_3');
+                if (box) {
+                    console.log('Box "test_3" activated.');
+                } else {
+                    console.warn('Box "test_3" could not be activated.');
+                }
             //
         });
     
         this.addTextButton(0, 30, 'Remove test_3 Box', () => {
             //
             boxList.removeBoxById("test_3");
-            //boxList.clearAll();
             //
         });
+
+        this.addTextButton(0, 60, 'Update Box', () => {
+            //
+            boxList.updateBoxById('pebbles', (box) => {
+                box.gain = 2;
+            });
+            //
+        });
+
+        this.addTextButton(0, 120, 'Save', () => {
+            //
+                saveGame(boxList);
+            //
+        });
+        
+        this.addTextButton(0, 150, 'Load', () => {
+            //
+                loadGame(boxList);
+            //
+        });
+
+
     }
     
     addTextButton(x, y, label, callback) {
@@ -241,15 +261,58 @@ async function loadLayoutFromJson(object, section) {
     const data = await response.json();
     const loadedData = data[section] || [];
 
-    if (section === 'gather') {
-        loadedData.forEach(data => {
-            object.addBox(data);
-        });
-    }
+    // Save config list to object for access in activateBox
+    object.boxConfigs = loadedData;
+
+    // Load save data from localStorage
+    const saveData = JSON.parse(localStorage.getItem('gameState')) || [];
+
+    loadedData.forEach(jsonBox => {
+        const saveBox = saveData.find(save => save.id === jsonBox.id);
+        const isActive = jsonBox.active || (saveBox && saveBox.active);
+
+        if (isActive) {
+            const box = object.activateBox(jsonBox.id);
+
+            if (box && saveBox) {
+                // Apply save state (like gain/count) to the box
+                box.gain = saveBox.gain ?? box.gain;
+                box.count = saveBox.count ?? box.count;
+            }
+        }
+    });
 }
 // USAGE
 //const boxList = new ActionBoxList(this, someContainer, 0, 0, 400);
 //loadLayoutFromJson(boxList, 'gather');
+
+export function saveGame(object) {
+    const data = [];
+
+    object.boxes.forEach(({ box }) => {
+        data.push({
+            active: box.active,
+            id: box.id,
+            gain: box.gain,
+            count: box.count || 0, // default to 0 if undefined
+        });
+    });
+
+    localStorage.setItem('gameState', JSON.stringify(data));
+    console.log('Saved:' + localStorage.getItem('gameState'));
+}
+
+export function loadGame(object) {
+    const data = JSON.parse(localStorage.getItem('gameState'));
+    if (!data) return;
+
+    data.forEach(({ id, gain, count }) => {
+        object.updateBoxById(id, (box) => {
+            box.gain = gain;
+            box.count = count;
+        });
+    });
+}
 
 // Export default MainScene;
 export default MainScene;

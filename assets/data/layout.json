@@ -32,6 +32,14 @@
       "gain": "TEST",
       "showButton": true,
       "buttonLabel": "Gather"
+    },
+    {
+      "id": "test_3",
+      "title": "Gather TEST_ADD1",
+      "description": "Collect nearby TEST.",
+      "gain": "TEST",
+      "showButton": true,
+      "buttonLabel": "Gather"
     }
   ]
 }
