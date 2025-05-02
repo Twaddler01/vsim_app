@@ -799,10 +799,24 @@ export default class ActionBox extends Phaser.GameObjects.Container {
         scene.add.existing(this);
     }
 
+removeBoxById(id) {
+    const entry = this.boxMap.get(id);
+    if (entry) {
+        this.scrollContainer.remove(entry.box, true);
+        this.boxes = this.boxes.filter(e => e.id !== id);
+        this.boxMap.delete(id);
+        this.repositionBoxes();
+        this.updateMask(); // reapply mask to recalculate height
 
-
-
-
+        // Prevent leftover scroll space if too short now
+        const contentHeight = this.getContentHeight();
+        const visibleHeight = this.maskHeight;
+        const minY = Math.min(0, visibleHeight - contentHeight);
+        if (this.scrollContainer.y < minY) {
+            this.scrollContainer.y = minY;
+        }
+    }
+}
 
 
 
@@ -829,4 +843,3 @@ data.forEach(entry => {
 So yes — using getters/setters is perfectly compatible with saving to and loading from localStorage, and they help keep your class logic clean and centralized.
 
 Would you like help setting up this save/load pattern?
-

@@ -1,10 +1,11 @@
 {
   "gather": [
     {
+      "active": true,
       "id": "twigs",
       "title": "Gather Twigs",
       "description": "Collect nearby twigs.",
-      "gain": "+1 Twig",
+      "gain": "Twig",
       "showButton": true,
       "buttonLabel": "Gather"
     },
@@ -12,7 +13,7 @@
       "id": "pebbles",
       "title": "Gather Pebbles",
       "description": "Collect nearby pebbles.",
-      "gain": "+1 Pebbles",
+      "gain": "Pebble",
       "showButton": true,
       "buttonLabel": "Gather"
     },
@@ -20,7 +21,7 @@
       "id": "test_1",
       "title": "Gather TEST1",
       "description": "Collect nearby TEST.",
-      "gain": "+1 TEST",
+      "gain": "TEST",
       "showButton": true,
       "buttonLabel": "Gather"
     },
@@ -28,7 +29,7 @@
       "id": "test_2",
       "title": "Gather TEST2",
       "description": "Collect nearby TEST.",
-      "gain": "+1 TEST",
+      "gain": "TEST",
       "showButton": true,
       "buttonLabel": "Gather"
     }

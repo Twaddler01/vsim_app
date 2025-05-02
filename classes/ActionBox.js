@@ -17,7 +17,7 @@ export default class ActionBox extends Phaser.GameObjects.Container {
         } = config;
 
         // Mutable states
-        this._count = 0;
+        this._gain = 1;
         // get/set variables
         this._id = id;
         this._gainTextValue = gain;
@@ -71,12 +71,12 @@ export default class ActionBox extends Phaser.GameObjects.Container {
         return this._id;
     }
 
-    get count() {
-        return this._count;
+    get gain() {
+        return this._gain;
     }
 
-    set count(val) {
-        this._count = val;
+    set gain(val) {
+        this._gain = val;
         this.updateGainText();
     }
 
@@ -90,6 +90,11 @@ export default class ActionBox extends Phaser.GameObjects.Container {
     }
 
     updateGainText() {
-        this.gainText.setText(`+${this._count} ${this._gainTextValue}`);
+        this._gain = 2;
+        let label = this._gainTextValue;
+        if (this._gain > 1) {
+            label += 's';
+        }
+        this.gainText.setText(`+${this._gain} ${label}`);
     }
 }
