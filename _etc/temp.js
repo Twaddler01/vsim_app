@@ -603,3 +603,230 @@ addTextButton(x, y, label, callback) {
 // Usage
 //this.debugContainer = this.add.container(100, 100);
 //this.debugUI(); 
+
+
+
+
+
+
+
+export default class ActionBox extends Phaser.GameObjects.Container {
+    constructor(scene, x, y, width, height, config) {
+        super(scene, x, y);
+        this.config = { ...config };
+
+        this.bg = scene.add.rectangle(0, 0, width, height, 0x333333).setOrigin(0);
+        this.add(this.bg);
+
+        this.titleText = scene.add.text(10, 10, config.title || '', { fontSize: '20px', color: '#fff' });
+        this.add(this.titleText);
+
+        this.descText = scene.add.text(10, 40, config.description || '', { fontSize: '14px', color: '#ccc' });
+        this.add(this.descText);
+
+        this.gainText = scene.add.text(10, 70, config.gain || '', { fontSize: '14px', color: '#aaffaa' });
+        this.add(this.gainText);
+
+        if (config.showButton) {
+            this.button = scene.add.text(10, 110, config.buttonLabel || 'Do', {
+                fontSize: '16px',
+                backgroundColor: '#444',
+                color: '#fff',
+                padding: { x: 10, y: 5 }
+            }).setInteractive();
+
+            this.button.on('pointerdown', config.onAction);
+            this.add(this.button);
+        }
+
+        scene.add.existing(this);
+    }
+
+    updateConfig(newConfig) {
+        Object.assign(this.config, newConfig);
+
+        if (newConfig.title !== undefined) this.titleText.setText(newConfig.title);
+        if (newConfig.description !== undefined) this.descText.setText(newConfig.description);
+        if (newConfig.gain !== undefined) this.gainText.setText(newConfig.gain);
+
+        if (newConfig.showButton !== undefined) {
+            if (newConfig.showButton && !this.button) {
+                this.button = this.scene.add.text(10, 110, newConfig.buttonLabel || 'Do', {
+                    fontSize: '16px',
+                    backgroundColor: '#444',
+                    color: '#fff',
+                    padding: { x: 10, y: 5 }
+                }).setInteractive();
+                this.button.on('pointerdown', newConfig.onAction || (() => {}));
+                this.add(this.button);
+            } else if (!newConfig.showButton && this.button) {
+                this.button.destroy();
+                this.button = null;
+            }
+        } else if (this.button && newConfig.buttonLabel) {
+            this.button.setText(newConfig.buttonLabel);
+        }
+
+        if (this.button && newConfig.onAction) {
+            this.button.removeAllListeners('pointerdown');
+            this.button.on('pointerdown', newConfig.onAction);
+        }
+    }
+}
+
+/* USAGE
+boxList.updateBoxById("test_3", box => {
+    box.updateConfig({
+        title: "Updated Title",
+        description: "New description",
+        gain: "+3",
+        showButton: true,
+        buttonLabel: "Collect",
+        onAction: () => console.log("Updated Action")
+    });
+});
+*/
+
+
+updateConfig(newConfig, persist = true) {
+    const prevId = this.config.id;
+    const updated = { ...this.config, ...newConfig };
+    this.config = updated;
+
+    if (updated.title !== undefined) this.titleText.setText(updated.title);
+    if (updated.description !== undefined) this.descText.setText(updated.description);
+    if (updated.gain !== undefined) this.gainText.setText(updated.gain);
+
+    if (updated.showButton !== undefined) {
+        if (updated.showButton && !this.button) {
+            this.button = this.scene.add.text(10, 110, updated.buttonLabel || 'Do', {
+                fontSize: '16px',
+                backgroundColor: '#444',
+                color: '#fff',
+                padding: { x: 10, y: 5 }
+            }).setInteractive();
+            this.button.on('pointerdown', updated.onAction || (() => {}));
+            this.add(this.button);
+        } else if (!updated.showButton && this.button) {
+            this.button.destroy();
+            this.button = null;
+        }
+    } else if (this.button && updated.buttonLabel) {
+        this.button.setText(updated.buttonLabel);
+    }
+
+    if (this.button && updated.onAction) {
+        this.button.removeAllListeners('pointerdown');
+        this.button.on('pointerdown', updated.onAction);
+    }
+
+    // Optionally persist to localStorage
+    if (persist && updated.id) {
+        const overrides = JSON.parse(localStorage.getItem('savedOverrides') || '{}');
+        overrides[updated.id] = { ...overrides[updated.id], ...newConfig };
+        localStorage.setItem('savedOverrides', JSON.stringify(overrides));
+    }
+}
+
+
+
+
+
+
+
+export default class ActionBox extends Phaser.GameObjects.Container {
+    constructor(scene, x, y, width, height, config = {}) {
+        super(scene, x, y);
+
+        const {
+            id = '',
+            title = "Untitled",
+            description = "",
+            gain = "",
+            showButton = false,
+            buttonLabel = "Do It",
+            onAction = () => {}
+        } = config;
+
+        // mutable states
+        this._count = 0;
+        // get/set
+        this._id = id;
+        this._gainTextValue = gain;
+
+        // Background
+        const bg = scene.add.rectangle(0, 0, width, height, STYLES.actionBoxColor).setOrigin(0);
+        this.add(bg);
+
+        // Title
+        this.titleText = scene.add.text(width / 2, 15, title, {
+            fontSize: '20px',
+            color: '#ffffff',
+            align: 'center'
+        }).setOrigin(0.5, 0);
+        this.add(this.titleText);
+
+        // Description
+        this.descText = scene.add.text(10, 50, description, {
+            fontSize: '16px',
+            color: '#ffffff',
+            wordWrap: { width: width - 20 }
+        });
+        this.add(this.descText);
+
+        // Gain (mutable)
+        const gainY = this.descText.y + this.descText.height + 10;
+        this.gainText = scene.add.text(20, gainY, gain, {
+            fontSize: '14px',
+            color: 'lightgreen'
+        });
+        this.add(this.gainText);
+
+        // Button
+        if (showButton) {
+            const buttonY = height - 30;
+            this.button = scene.add.text(width / 2, buttonY, buttonLabel, {
+                fontSize: '16px',
+                backgroundColor: '#e74c3c',
+                padding: { x: 10, y: 5 },
+                color: '#ffffff'
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+            this.button.on('pointerdown', onAction);
+            this.add(this.button);
+        }
+
+        scene.add.existing(this);
+    }
+
+
+
+
+
+
+
+
+Yes, absolutely — get count() simply provides access to an internal value (this._count), so when you're ready to save your boxes to localStorage, you can easily build an array like this:
+
+const savedData = boxList.map(box => ({
+    id: box.id,
+    count: box.count, // uses the getter
+    // include any other values you want to track
+}));
+
+localStorage.setItem('boxState', JSON.stringify(savedData));
+
+When reloading, you'd loop through that saved array and apply the values using the corresponding set count(val) if you have it:
+
+const data = JSON.parse(localStorage.getItem('boxState') || '[]');
+data.forEach(entry => {
+    const box = boxList.find(b => b.id === entry.id);
+    if (box) {
+        box.count = entry.count; // uses the setter
+    }
+});
+
+So yes — using getters/setters is perfectly compatible with saving to and loading from localStorage, and they help keep your class logic clean and centralized.
+
+Would you like help setting up this save/load pattern?
+

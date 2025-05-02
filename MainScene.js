@@ -183,48 +183,9 @@ this.startY = gatherBarStackY;
 
 const boxList = new ActionBoxList(this, gatherContainer, gatherBarStackX, gatherBarStackY, gatherBarStackW, 6);
 
-//// WIP: JSON
-loadBoxesFromJson(boxList, 'gather');
-
-/*boxList.addBox({
-    id: "twigs",
-    title: "Gather Twigs",
-    description: "Collect nearby twigs.",
-    gain: "+1 Twig",
-    showButton: true,
-    buttonLabel: "Gather",
-    onAction: () => console.log("Gathering twigs...")
-});
-
-boxList.addBox({
-    id: "pebbles",
-    title: "Gather Pebbles",
-    description: "Collect nearby pebbles.",
-    gain: "+1 Pebbles",
-    showButton: true,
-    buttonLabel: "Gather",
-    onAction: () => console.log("Gathering pebbles...")
-});
-
-boxList.addBox({
-    id: "test_1",
-    title: "Gather TEST1",
-    description: "Collect nearby TEST.",
-    gain: "+1 TEST",
-    showButton: true,
-    buttonLabel: "Gather",
-    onAction: () => console.log("Gathering TEST...")
-});
-
-boxList.addBox({
-    id: "test_2",
-    title: "Gather TEST2",
-    description: "Collect nearby TEST.",
-    gain: "+1 TEST",
-    showButton: true,
-    buttonLabel: "Gather",
-    onAction: () => console.log("Gathering TEST...")
-});*/
+// Load data
+loadLayoutFromJson(boxList, 'gather');
+// *** END gatherBox
 
     // DEBUG
     this.debugContainer = this.add.container(500, 500);
@@ -275,49 +236,20 @@ boxList.addBox({
 } // MainScene
 
 // FUNCTIONS
-async function loadBoxesFromJson(boxList, section = 'gather') {
-  const response = await fetch('assets/data/layout.json');
-  const defaults = await response.json();
+async function loadLayoutFromJson(object, section) {
+    const response = await fetch('assets/data/layout.json');
+    const data = await response.json();
+    const loadedData = data[section] || [];
 
-  const overrides = JSON.parse(localStorage.getItem('savedOverrides') || '{}');
-  const boxes = defaults[section] || [];
-
-  boxes.forEach(box => {
-    const merged = { ...box, ...(overrides[box.id] || {}) };
-    boxList.addBox({
-      ...merged,
-      onAction: () => console.log(`Gathering ${merged.title?.toLowerCase() || merged.id}`)
-    });
-  });
+    if (section === 'gather') {
+        loadedData.forEach(data => {
+            object.addBox(data);
+        });
+    }
 }
-
-async function loadAndApplyBoxes(section, boxList) {
-    const response = await fetch('layout.json');
-    const defaults = await response.json();
-
-    const overrides = JSON.parse(localStorage.getItem('savedOverrides') || '{}');
-    const sectionDefaults = defaults[section] || [];
-
-    const merged = sectionDefaults.map(box => ({
-        ...box,
-        ...(overrides[box.id] || {}),
-        onAction: () => console.log(`Gathering ${box.id}...`)
-    }));
-
-    merged.forEach(config => boxList.addBox(config));
-}
-
-function updateBoxOverride(id, changes) {
-  const overrides = JSON.parse(localStorage.getItem('savedOverrides') || '{}');
-  overrides[id] = { ...(overrides[id] || {}), ...changes };
-  localStorage.setItem('savedOverrides', JSON.stringify(overrides));
-}
-// Usage
-//updateBoxOverride("twigs", { gain: "+2 Twigs", buttonLabel: "Grab Twigs" });
-
-// STORAGE USAGE
-//this.boxList = new ActionBoxList(this, someContainer, 0, 0, 400);
-//loadBoxesFromJson(this.boxList);
+// USAGE
+//const boxList = new ActionBoxList(this, someContainer, 0, 0, 400);
+//loadLayoutFromJson(boxList, 'gather');
 
 // Export default MainScene;
 export default MainScene;

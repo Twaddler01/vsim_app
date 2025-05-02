@@ -17,14 +17,8 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         this.scrollContainer = scene.add.container(0, 0);
         this.container.add(this.scrollContainer);
 
-        // Create mask based on desired visible area
-        /*const visibleHeight = container.height || 400; // fallback value
-        const maskGraphics = scene.make.graphics({ x: 0, y: 0, add: false });
-        maskGraphics.fillStyle(0xffffff);
-        maskGraphics.fillRect(startX, startY, width, visibleHeight - startY); // mask only from content start
-        const mask = maskGraphics.createGeometryMask();
-        this.scrollContainer.setMask(mask);*/
-this.updateMask();
+        this.updateMask();
+        
         // Dragging state
         this.isDragging = false;
         this.dragStartY = 0;
@@ -41,36 +35,20 @@ this.updateMask();
             }
         });
 
-scene.input.on('pointermove', (pointer) => {
-    if (!this.isDragging) return;
-
-    const deltaY = pointer.y - this.dragStartY;
-    let newY = this.containerStartY + deltaY;
-
-    const contentHeight = this.getContentHeight();
-    const visibleHeight = this.maskHeight; // Use the dynamic mask height
-
-    const minY = Math.min(0, visibleHeight - contentHeight); // Updated to use visible height dynamically
-    const maxY = 0;
-
-    this.scrollContainer.y = Phaser.Math.Clamp(newY, minY, maxY);
-});
-
-
-
-/*
         scene.input.on('pointermove', (pointer) => {
             if (!this.isDragging) return;
-
+        
             const deltaY = pointer.y - this.dragStartY;
             let newY = this.containerStartY + deltaY;
-
+        
             const contentHeight = this.getContentHeight();
-            const minY = Math.min(0, this.container.height - contentHeight - this.startY);
+            const visibleHeight = this.maskHeight; // Use the dynamic mask height
+        
+            const minY = Math.min(0, visibleHeight - contentHeight); // Updated to use visible height dynamically
             const maxY = 0;
-
+        
             this.scrollContainer.y = Phaser.Math.Clamp(newY, minY, maxY);
-        });*/
+        });
 
         scene.input.on('pointerup', () => {
             this.isDragging = false;

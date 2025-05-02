@@ -7,13 +7,20 @@ export default class ActionBox extends Phaser.GameObjects.Container {
         super(scene, x, y);
 
         const {
+            id = "",
             title = "Untitled",
             description = "",
-            gain = "",
+            gain = "Gain",
             showButton = false,
             buttonLabel = "Do It",
             onAction = () => {}
         } = config;
+
+        // Mutable states
+        this._count = 0;
+        // get/set variables
+        this._id = id;
+        this._gainTextValue = gain;
 
         // Background
         const bg = scene.add.rectangle(0, 0, width, height, STYLES.actionBoxColor).setOrigin(0);
@@ -58,5 +65,31 @@ export default class ActionBox extends Phaser.GameObjects.Container {
         }
 
         scene.add.existing(this);
+    }
+
+    get id() {
+        return this._id;
+    }
+
+    get count() {
+        return this._count;
+    }
+
+    set count(val) {
+        this._count = val;
+        this.updateGainText();
+    }
+
+    get gainTextValue() {
+        return this._gainTextValue;
+    }
+
+    set gainTextValue(val) {
+        this._gainTextValue = val;
+        this.updateGainText();
+    }
+
+    updateGainText() {
+        this.gainText.setText(`+${this._count} ${this._gainTextValue}`);
     }
 }
