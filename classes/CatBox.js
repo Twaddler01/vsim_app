@@ -19,6 +19,7 @@ export default class CatBox extends Phaser.GameObjects.Container {
 
         this._contentPadding = contentPadding;
         this.catBoxWidth = catBoxWidth;
+        this._width = width - contentPadding;
         
         // Content area starts below title + top padding
         this.contentArea = scene.add.container(
@@ -85,38 +86,114 @@ export default class CatBox extends Phaser.GameObjects.Container {
         });
     }
 
-addColorRow(objects = [], spacing = 10, rowColor = 0x222222, rowPadding = 5) {
-    let maxHeight = 0;
-    let currentX = this._contentPadding;
+    addColorRow(objects = [], spacing = 10, rowColor = 0x222222, rowPadding = 5) {
+        let maxHeight = 0;
+        let currentX = this._contentPadding;
+    
+        // Measure max height among objects for background sizing
+        objects.forEach(obj => {
+            maxHeight = Math.max(maxHeight, obj.height || 0);
+        });
+    
+        const totalHeight = maxHeight + rowPadding * 2;
+    
+        // Background rectangle
+        const bg = this.scene.add.rectangle(
+            this._contentPadding,
+            this._currentY,
+            this.catBoxWidth - this._contentPadding * 2,
+            totalHeight,
+            rowColor
+        ).setOrigin(0, 0);
+        this.contentArea.add(bg);
+    
+        // Add each object on top of background, spaced horizontally
+        objects.forEach(obj => {
+            obj.x = currentX;
+            obj.y = this._currentY + rowPadding;
+            this.contentArea.add(obj);
+            currentX += (obj.width || 0) + spacing;
+        });
+    
+        // Increment stacking position
+        this._currentY += totalHeight + spacing;
+    }
 
-    // Measure max height among objects for background sizing
-    objects.forEach(obj => {
-        maxHeight = Math.max(maxHeight, obj.height || 0);
+    addInventoryRow({ label, count = 0, rate = "", spacing = 10 }) {
+    const labelText = this.scene.add.text(10, 0, label, {
+        fontSize: '16px',
+        color: '#ffffff'
     });
 
-    const totalHeight = maxHeight + rowPadding * 2;
+    let rateText = null;
+    if (rate) {
+        rateText = this.scene.add.text(150, 0, rate, {
+            fontSize: '14px',
+            color: '#aaaaaa'
+        });
+    }
 
-    // Background rectangle
-    const bg = this.scene.add.rectangle(
-        this._contentPadding,
-        this._currentY,
-        this.catBoxWidth - this._contentPadding * 2,
-        totalHeight,
-        rowColor
-    ).setOrigin(0, 0);
-    this.contentArea.add(bg);
-
-    // Add each object on top of background, spaced horizontally
-    objects.forEach(obj => {
-        obj.x = currentX;
-        obj.y = this._currentY + rowPadding;
-        this.contentArea.add(obj);
-        currentX += (obj.width || 0) + spacing;
+    const countText = this.scene.add.text(0, 0, count.toString(), {
+        fontSize: '16px',
+        color: '#ffffff'
     });
 
-    // Increment stacking position
-    this._currentY += totalHeight + spacing;
+    const updateCountText = (value) => {
+        const textStr = value.toString();
+        countText.setText(textStr);
+
+        // Align to right within box
+        const rightEdge = this._width - this._contentPadding;
+        countText.x = rightEdge - countText.width;
+    };
+
+    updateCountText(count); // Initial alignment
+
+    const rowHeight = Math.max(labelText.height, countText.height, rateText?.height || 0);
+    const bg = this.scene.add.rectangle(5, this._currentY, this._width, rowHeight + 10, 0x1e1e1e)
+        .setOrigin(0)
+        .setStrokeStyle(1, 0x444444);
+
+    labelText.y = this._currentY + 5;
+    countText.y = labelText.y;
+    if (rateText) rateText.y = labelText.y;
+
+    this.contentArea.add([bg, labelText, countText]);
+    if (rateText) this.contentArea.add(rateText);
+
+    this._currentY += rowHeight + spacing;
+
+    // Track internal value and expose with get/set
+    let internalCount = count;
+    return {
+        labelText,
+        countText,
+        rateText,
+        get count() {
+            return internalCount;
+        },
+        set count(val) {
+            internalCount = val;
+            updateCountText(val);
+        }
+    };
 }
 
+updateInventoryCountText(countText, newValue) {
+    countText.setText(newValue.toString());
+
+    const newDigitLength = newValue.toString().length;
+    if (newDigitLength > this._maxCountDigits) {
+        this._maxCountDigits = newDigitLength;
+        // Re-align all
+        this._inventoryCountTexts.forEach(txt => {
+            const charWidth = txt.width / txt.text.length;
+            txt.x = this._width - this._contentPadding - charWidth * this._maxCountDigits;
+        });
+    } else {
+        const charWidth = countText.width / newValue.toString().length;
+        countText.x = this._width - this._contentPadding - charWidth * this._maxCountDigits;
+    }
+}
 
 }

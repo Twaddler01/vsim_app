@@ -1123,3 +1123,83 @@ export default class CatBox extends Phaser.GameObjects.Container {
         this.titleText.setText(this._title);
     }
 }
+
+
+
+
+
+
+Perfect — here's how to wire the ActionBox click so it automatically updates the corresponding inventory row's count visually and internally.
+
+Step-by-Step Integration
+
+Assuming you already created a row like:
+
+const twigsRow = catbox.addInventoryRow({ label: "Twigs", count: 0, rate: "+1/sec" });
+
+You’ll pass this row to ActionBox through the config object so it knows what to update:
+
+
+---
+
+1. Modify the ActionBox constructor to accept targetRow:
+
+Update this in the constructor:
+
+const {
+    ...
+    targetRow = null,  // <- this is your inventory row (optional)
+    onAction = () => {
+        this._count += this._gain;
+
+        // Update the row’s display, if linked
+        if (targetRow) targetRow.count = this._count;
+
+        console.log(`Gathering +${this._gain} ${this._gainTextValue}. Count: ${this._count}`);
+    }
+} = config;
+
+
+---
+
+2. Set the row’s count in the setter
+
+You're already exposing this._count through a set count(val) — just update the row visually if one is linked:
+
+Add this to your ActionBox class (after this._count = 0):
+
+this._targetRow = config.targetRow || null;
+
+Then update the count setter:
+
+set count(val) {
+    this._count = val;
+    if (this._targetRow) {
+        this._targetRow.count = val;
+    }
+}
+
+
+---
+
+3. Creating your ActionBox
+
+Now when creating an ActionBox, just pass the row:
+
+const twigsRow = catbox.addInventoryRow({ label: "Twigs", count: 0, rate: "+1/sec" });
+
+const twigsBox = new ActionBox(this, 50, 300, 200, 150, {
+    title: "Gather Twigs",
+    description: "Click to gather sticks.",
+    gain: "Twig",
+    showButton: true,
+    targetRow: twigsRow // <- key part
+});
+
+
+---
+
+Now when you click the button in ActionBox, it updates twigsRow.count automatically, keeping it aligned and consistent.
+
+Would you like me to help support multiple actions adding to the same row, or auto-generating ActionBoxes from config?
+

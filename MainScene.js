@@ -190,14 +190,34 @@ loadLayoutFromJson(boxList, 'gather');
 
 
 // *** catBox
-const catbox = new CatBox(this, 100, 100, 400, 600, { title: "Inventory" });
-const itemRow = this.add.text(10, 10, "Potion");
-const itemRow2 = this.add.text(10, 10, "Wand");
+const catbox = new CatBox(this, gatherBoxWidth + 20, 10, 400, 600, { title: "Inventory" });
+/*
+const itemRow = this.add.text(10, 10, "Twigs");
+const itemRow2 = this.add.text(10, 10, "Pebbles");
 const itemRow3 = this.add.text(10, 10, "Sword");
 const itemRow4 = this.add.text(10, 10, "Armor");
 const itemRow5 = this.add.text(10, 10, "Rock");
 catbox.addRow([itemRow, itemRow2, itemRow3, itemRow4, itemRow5]);
+*/
 // *** END CatBox
+
+const twigsRow = catbox.addInventoryRow({
+    label: "Twigs",
+    count: 0,
+    rate: "+1/sec"
+});
+
+const pebblesRow = catbox.addInventoryRow({
+    label: "Pebbles",
+    count: 5
+});
+
+// Update count when needed
+twigsRow.count = 10; // Triggers proper alignment automatically
+
+
+
+
 
 
     // DEBUG
