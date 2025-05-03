@@ -1067,3 +1067,59 @@ Now, all active boxes in layout.json or saved as active: true will load correctl
 
 Would you like help adding a dev button like “Activate Box: twigs” using activateBox()?
 
+
+
+
+export default class CatBox extends Phaser.GameObjects.Container {
+    constructor(scene, x, y, width, height, config = {}) {
+        super(scene, x, y);
+
+        const {
+            id = "",
+            catBoxX = x || 0,
+            catBoxY = y || 0,
+            catBoxWidth = width || 400, 
+            catBoxHeight = height || 600,
+            title = "",
+            contentPadding = 10,
+        } = config;
+
+        this.id = id;
+        this._title = title;
+
+        // Background
+        const bg = scene.add.rectangle(0, 0, catBoxWidth, catBoxHeight, STYLES.catBoxColor).setOrigin(0);
+        this.add(bg);
+
+        // Title
+        this.titleText = scene.add.text(catBoxWidth / 2, 15, title, {
+            fontSize: '20px',
+            color: '#ffffff',
+            align: 'center'
+        }).setOrigin(0.5, 0);
+        this.add(this.titleText);
+
+        // Content area starts below title
+        this.contentArea = scene.add.container(0, 50); // y-offset below title
+        this.add(this.contentArea);
+
+        scene.add.existing(this);
+    }
+
+    addContent(child) {
+        this.contentArea.add(child);
+    }
+
+    get title() {
+        return this._title;
+    }
+
+    set title(val) {
+        this._title = val;
+        this.updateTitle();
+    }
+
+    updateTitle() {
+        this.titleText.setText(this._title);
+    }
+}

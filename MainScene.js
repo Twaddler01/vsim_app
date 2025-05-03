@@ -1,5 +1,6 @@
 import ActionBox from '../classes/ActionBox.js';
 import ActionBoxList from '../classes/ActionBoxList.js';
+import CatBox from '../classes/CatBox.js';
 
 // Setup unload listener
 window.addEventListener('beforeunload', () => {
@@ -186,6 +187,17 @@ const boxList = new ActionBoxList(this, gatherContainer, gatherBarStackX, gather
 // Load data
 loadLayoutFromJson(boxList, 'gather');
 // *** END gatherBox
+
+
+// *** catBox
+const catbox = new CatBox(this, 100, 100, 400, 600, { title: "Inventory" });
+const itemRow = this.add.text(10, 10, "Potion");
+const itemRow2 = this.add.text(10, 10, "Wand");
+const itemRow3 = this.add.text(10, 10, "Sword");
+const itemRow4 = this.add.text(10, 10, "Armor");
+const itemRow5 = this.add.text(10, 10, "Rock");
+catbox.addRow([itemRow, itemRow2, itemRow3, itemRow4, itemRow5]);
+// *** END CatBox
 
 
     // DEBUG
