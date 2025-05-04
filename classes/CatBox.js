@@ -120,80 +120,79 @@ export default class CatBox extends Phaser.GameObjects.Container {
     }
 
     addInventoryRow({ label, count = 0, rate = "", spacing = 10 }) {
-    const labelText = this.scene.add.text(10, 0, label, {
-        fontSize: '16px',
-        color: '#ffffff'
-    });
-
-    let rateText = null;
-    if (rate) {
-        rateText = this.scene.add.text(150, 0, rate, {
-            fontSize: '14px',
-            color: '#aaaaaa'
+        const labelText = this.scene.add.text(10, 0, label, {
+            fontSize: '16px',
+            color: '#ffffff'
         });
-    }
-
-    const countText = this.scene.add.text(0, 0, count.toString(), {
-        fontSize: '16px',
-        color: '#ffffff'
-    });
-
-    const updateCountText = (value) => {
-        const textStr = value.toString();
-        countText.setText(textStr);
-
-        // Align to right within box
-        const rightEdge = this._width - this._contentPadding;
-        countText.x = rightEdge - countText.width;
-    };
-
-    updateCountText(count); // Initial alignment
-
-    const rowHeight = Math.max(labelText.height, countText.height, rateText?.height || 0);
-    const bg = this.scene.add.rectangle(5, this._currentY, this._width, rowHeight + 10, 0x1e1e1e)
-        .setOrigin(0)
-        .setStrokeStyle(1, 0x444444);
-
-    labelText.y = this._currentY + 5;
-    countText.y = labelText.y;
-    if (rateText) rateText.y = labelText.y;
-
-    this.contentArea.add([bg, labelText, countText]);
-    if (rateText) this.contentArea.add(rateText);
-
-    this._currentY += rowHeight + spacing;
-
-    // Track internal value and expose with get/set
-    let internalCount = count;
-    return {
-        labelText,
-        countText,
-        rateText,
-        get count() {
-            return internalCount;
-        },
-        set count(val) {
-            internalCount = val;
-            updateCountText(val);
+    
+        let rateText = null;
+        if (rate) {
+            rateText = this.scene.add.text(150, 0, rate, {
+                fontSize: '14px',
+                color: '#aaaaaa'
+            });
         }
-    };
-}
-
-updateInventoryCountText(countText, newValue) {
-    countText.setText(newValue.toString());
-
-    const newDigitLength = newValue.toString().length;
-    if (newDigitLength > this._maxCountDigits) {
-        this._maxCountDigits = newDigitLength;
-        // Re-align all
-        this._inventoryCountTexts.forEach(txt => {
-            const charWidth = txt.width / txt.text.length;
-            txt.x = this._width - this._contentPadding - charWidth * this._maxCountDigits;
+    
+        const countText = this.scene.add.text(0, 0, count.toString(), {
+            fontSize: '16px',
+            color: '#ffffff'
         });
-    } else {
-        const charWidth = countText.width / newValue.toString().length;
-        countText.x = this._width - this._contentPadding - charWidth * this._maxCountDigits;
+    
+        const updateCountText = (value) => {
+            const textStr = value.toString();
+            countText.setText(textStr);
+    
+            // Align to right within box
+            const rightEdge = this._width - this._contentPadding;
+            countText.x = rightEdge - countText.width;
+        };
+    
+        updateCountText(count); // Initial alignment
+    
+        const rowHeight = Math.max(labelText.height, countText.height, rateText?.height || 0);
+        const bg = this.scene.add.rectangle(5, this._currentY, this._width, rowHeight + 10, 0x1e1e1e)
+            .setOrigin(0)
+            .setStrokeStyle(1, 0x444444);
+    
+        labelText.y = this._currentY + 5;
+        countText.y = labelText.y;
+        if (rateText) rateText.y = labelText.y;
+    
+        this.contentArea.add([bg, labelText, countText]);
+        if (rateText) this.contentArea.add(rateText);
+    
+        this._currentY += rowHeight + spacing;
+    
+        // Track internal value and expose with get/set
+        let internalCount = count;
+        return {
+            labelText,
+            countText,
+            rateText,
+            get count() {
+                return internalCount;
+            },
+            set count(val) {
+                internalCount = val;
+                updateCountText(val);
+            }
+        };
     }
-}
 
+    updateInventoryCountText(countText, newValue) {
+        countText.setText(newValue.toString());
+    
+        const newDigitLength = newValue.toString().length;
+        if (newDigitLength > this._maxCountDigits) {
+            this._maxCountDigits = newDigitLength;
+            // Re-align all
+            this._inventoryCountTexts.forEach(txt => {
+                const charWidth = txt.width / txt.text.length;
+                txt.x = this._width - this._contentPadding - charWidth * this._maxCountDigits;
+            });
+        } else {
+            const charWidth = countText.width / newValue.toString().length;
+            countText.x = this._width - this._contentPadding - charWidth * this._maxCountDigits;
+        }
+    }
 }

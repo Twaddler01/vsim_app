@@ -57,8 +57,6 @@ class MainScene extends Phaser.Scene {
         this.graphics.fillRect(0, 0, worldWidth, worldHeight);
         this.graphics.setDepth(-1);
     
-        this.createUI();
-    
         // Enable camera drag for panning
         this.input.on('pointerdown', (pointer) => {
             this.isDragging = true;
@@ -107,14 +105,14 @@ class MainScene extends Phaser.Scene {
                     const delta = dist - this.pinchStartDistance;
                     this.pinchStartDistance = dist;
         
-                    const zoomFactor = 1 + delta * 0.0025;
+                    const zoomFactor = 1 + delta * 0.00125; // 0025
                     this.cameraZoom = Phaser.Math.Clamp(this.cameraZoom * zoomFactor, this.minZoom, 5);
                     this.cameras.main.setZoom(this.cameraZoom);
                 }
             } 
             // Handle drag-to-pan
             else if (pointers.length === 1 && pointer.isDown) {
-                const dragSpeed = 1 / this.cameraZoom;
+                const dragSpeed = 0.25 / this.cameraZoom; // 1
                 this.cameras.main.scrollX -= pointer.velocity.x * dragSpeed;
                 this.cameras.main.scrollY -= pointer.velocity.y * dragSpeed;
                 this.pinchStartDistance = null; // cancel zoom state
@@ -139,91 +137,19 @@ class MainScene extends Phaser.Scene {
         this.graphics.fillRect(0, 0, width, height);
         this.graphics.setDepth(-1); // -1 ensures it's behind other game elements
 
-// *** LAYOUT AREAS
-
-// *** gatherBox
-const gatherBoxX = 0;
-const gatherBoxY = 0;
-const gatherBoxWidth = 400;
-const gatherBoxHeight = 600; //// /12
-
-// Create the container to group the box and its contents
-const gatherContainer = this.add.container(10, 10); // Top-left position
-
-// Box background
-const gatherBoxRect = this.add.rectangle(gatherBoxX, gatherBoxY, gatherBoxWidth, gatherBoxHeight, UI_STYLES.mainBoxColor)
-    .setOrigin(0);
-gatherBoxRect.setStrokeStyle(2, 0xffffff);
-
-// Box title
-const gatherBoxRectTitle = this.add.rectangle(gatherBoxRect.x, gatherBoxRect.y, gatherBoxWidth, gatherBoxHeight / 12, UI_STYLES.titleBoxColor)
-    .setOrigin(0);
-gatherBoxRectTitle.setStrokeStyle(2, 0xffffff);
-// Space of title area
-this.gatherBoxRectTitleSpace = gatherBoxHeight / 12 + 4; // Add border
-
-// Title text centered at the top
-const titleText = this.add.text(
-    gatherBoxWidth / 2, 15, // X centered, Y a bit down from top
-    "Gather Area",
-    {
-        fontSize: UI_STYLES.fontSizeLarge,
-        color: UI_STYLES.textColor,
-        align: 'center'
-    }
-).setOrigin(0.5, 0); // Center X, top Y
-
-// Add everything to container
-gatherContainer.add([gatherBoxRect, gatherBoxRectTitle, titleText]);
-
-// Add boxes to gatherBox
-const gatherBarStackX = gatherBoxX + 2;
-const gatherBarStackY = gatherBoxHeight / 12 + 2;
-const gatherBarStackW = gatherBoxWidth - 4;
-this.startY = gatherBarStackY;
-
-const boxList = new ActionBoxList(this, gatherContainer, gatherBarStackX, gatherBarStackY, gatherBarStackW, 6);
-
-// Load data
-loadLayoutFromJson(boxList, 'gather');
-// *** END gatherBox
-
-
-// *** catBox
-const catbox = new CatBox(this, gatherBoxWidth + 20, 10, 400, 600, { title: "Inventory" });
-/*
-const itemRow = this.add.text(10, 10, "Twigs");
-const itemRow2 = this.add.text(10, 10, "Pebbles");
-const itemRow3 = this.add.text(10, 10, "Sword");
-const itemRow4 = this.add.text(10, 10, "Armor");
-const itemRow5 = this.add.text(10, 10, "Rock");
-catbox.addRow([itemRow, itemRow2, itemRow3, itemRow4, itemRow5]);
-*/
-// *** END CatBox
-
-const twigsRow = catbox.addInventoryRow({
-    label: "Twigs",
-    count: 0,
-    rate: "+1/sec"
-});
-
-const pebblesRow = catbox.addInventoryRow({
-    label: "Pebbles",
-    count: 5
-});
-
-// Update count when needed
-twigsRow.count = 10; // Triggers proper alignment automatically
-
-
-
-
-
-
-    // DEBUG
-    this.debugContainer = this.add.container(500, 500);
-    this.debugUI(boxList); 
-
+        // *** LAYOUT AREAS
+        // Gather
+        const gatherArea = this.addGatherBox();
+        
+        // Inventory
+        this.catbox = new CatBox(this, this.gatherBoxWidth + 20, 10, 400, 600, { title: "Inventory" });
+        
+        // Load layout data
+        loadLayoutFromJson(gatherArea, 'gather', this.catbox);
+    
+        // DEBUG
+        this.debugContainer = this.add.container(500, 500);
+        this.debugUI(gatherArea);
     }
 
     // DEBUG BUTTONS
@@ -231,7 +157,7 @@ twigsRow.count = 10; // Triggers proper alignment automatically
         this.addTextButton(0, 0, 'Add test_3 Box', () => {
             //
             // flag true
-                const box = boxList.activateBox('test_3');
+                const box = boxList.activateBox('test_3', this.catbox);
                 if (box) {
                     console.log('Box "test_3" activated.');
                 } else {
@@ -269,6 +195,7 @@ twigsRow.count = 10; // Triggers proper alignment automatically
 
     }
     
+    // DEBUG
     addTextButton(x, y, label, callback) {
         const btn = this.add.text(x, y, label, {
             fontSize: '18px',
@@ -285,10 +212,57 @@ twigsRow.count = 10; // Triggers proper alignment automatically
     //this.debugContainer = this.add.container(100, 100);
     //this.debugUI(); 
 
+    addGatherBox() {
+        // *** gatherBox
+        const gatherBoxX = 0;
+        const gatherBoxY = 0;
+        const gatherBoxWidth = 400;
+        const gatherBoxHeight = 600; //// /12
+        this.gatherBoxWidth = gatherBoxWidth;
+
+        // Create the container to group the box and its contents
+        const gatherContainer = this.add.container(10, 10); // Top-left position
+        
+        // Box background
+        const gatherBoxRect = this.add.rectangle(gatherBoxX, gatherBoxY, gatherBoxWidth, gatherBoxHeight, UI_STYLES.mainBoxColor)
+            .setOrigin(0);
+        gatherBoxRect.setStrokeStyle(2, 0xffffff);
+        
+        // Box title
+        const gatherBoxRectTitle = this.add.rectangle(gatherBoxRect.x, gatherBoxRect.y, gatherBoxWidth, gatherBoxHeight / 12, UI_STYLES.titleBoxColor)
+            .setOrigin(0);
+        gatherBoxRectTitle.setStrokeStyle(2, 0xffffff);
+        // Space of title area
+        this.gatherBoxRectTitleSpace = gatherBoxHeight / 12 + 4; // Add border
+        
+        // Title text centered at the top
+        const titleText = this.add.text(
+            gatherBoxWidth / 2, 15, // X centered, Y a bit down from top
+            "Gather Area",
+            {
+                fontSize: UI_STYLES.fontSizeLarge,
+                color: UI_STYLES.textColor,
+                align: 'center'
+            }
+        ).setOrigin(0.5, 0); // Center X, top Y
+        
+        // Add everything to container
+        gatherContainer.add([gatherBoxRect, gatherBoxRectTitle, titleText]);
+        
+        // Add boxes to gatherBox
+        const gatherBarStackX = gatherBoxX + 2;
+        const gatherBarStackY = gatherBoxHeight / 12 + 2;
+        const gatherBarStackW = gatherBoxWidth - 4;
+        this.startY = gatherBarStackY;
+        
+        const boxList = new ActionBoxList(this, gatherContainer, gatherBarStackX, gatherBarStackY, gatherBarStackW, 6);
+        // *** END gatherBox
+        return boxList;
+    }
 } // MainScene
 
 // FUNCTIONS
-async function loadLayoutFromJson(object, section) {
+async function loadLayoutFromJson(object, section, addedObject) {
     const response = await fetch('assets/data/layout.json');
     const data = await response.json();
     const loadedData = data[section] || [];
@@ -304,7 +278,7 @@ async function loadLayoutFromJson(object, section) {
         const isActive = jsonBox.active || (saveBox && saveBox.active);
 
         if (isActive) {
-            const box = object.activateBox(jsonBox.id);
+            const box = object.activateBox(jsonBox.id, addedObject);
 
             if (box && saveBox) {
                 // Apply save state (like gain/count) to the box

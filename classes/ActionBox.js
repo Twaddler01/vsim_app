@@ -14,15 +14,14 @@ export default class ActionBox extends Phaser.GameObjects.Container {
             gain = "Gain",
             showButton = false,
             buttonLabel = "Do It",
-            onAction = () => { 
-                this._count += this._gain;
-                console.log('Gathering +' + this._gain + ' ' + this._gainTextValue + ' Count: ' + this._count);
-            }
+            targetRow = null,
+            onAction = null,
         } = config;
 
         // Mutable states
         this._gain = 1;
         this._count = 0;
+        this._targetRow = config.targetRow || null;
         // get/set variables
         this._id = id;
         this._gainTextValue = gain;
@@ -67,11 +66,19 @@ export default class ActionBox extends Phaser.GameObjects.Container {
                 color: '#ffffff'
             }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-            btn.on('pointerdown', onAction);
+            btn.on('pointerdown', () => this.handleAction());
             this.add(btn);
         }
 
         scene.add.existing(this);
+    }
+
+    handleAction() {
+        this._count += this._gain;
+        if (this._targetRow) {
+            this._targetRow.count = this._count;
+        }
+        console.log(`Gathering +${this._gain} ${this._gainTextValue} Count: ${this._count}`);
     }
 
     get id() {
@@ -106,7 +113,9 @@ export default class ActionBox extends Phaser.GameObjects.Container {
     
     set count(val) {
         this._count = val;
-        // update count next
+        if (this._targetRow) {
+            this._targetRow.count = val;
+        }
     }
     
     set active(val) {

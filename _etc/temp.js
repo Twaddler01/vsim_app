@@ -1203,3 +1203,74 @@ Now when you click the button in ActionBox, it updates twigsRow.count automatica
 
 Would you like me to help support multiple actions adding to the same row, or auto-generating ActionBoxes from config?
 
+
+
+Yes! Since you're dynamically adding boxes later (like with your 'Add test_3 Box' button), you need to assign the targetRow at the time of activation—which likely happens inside activateBox.
+
+Your setter for active is not the best place because:
+
+It doesn't know about your addedObject or addInventoryRow.
+
+It just sets a flag and doesn't handle any linking logic.
+
+
+
+---
+
+Best Approach: Do it in activateBox(id)
+
+Update your boxList.activateBox() method to:
+
+1. Create or retrieve the ActionBox.
+
+
+2. Assign the inventory row via addInventoryRow(...).
+
+
+3. Set box._targetRow = row.
+
+
+
+
+---
+
+Example activateBox() Update
+
+activateBox(id) {
+    const config = this.boxConfigs.find(cfg => cfg.id === id);
+    if (!config) return null;
+
+    let box = this.boxes.find(b => b.id === id);
+    if (!box) {
+        box = new ActionBox(this.scene, x, y, width, height, config);
+        this.add(box);
+        this.boxes.push(box);
+    }
+
+    box.active = true;
+
+    // Add inventory row and link it
+    const row = this.addedObject.addInventoryRow({
+        label: box.gainTextValue + 's',
+        count: box.count,
+        rate: "+1/sec"
+    });
+    box._targetRow = row;
+
+    return box;
+}
+
+Make sure addedObject is available inside activateBox. If not, pass it in as an argument or store a reference to it.
+
+
+---
+
+Recap
+
+Don't assign targetRow in the active setter.
+
+Do the linking in activateBox()—either initially or later—so every ActionBox always gets connected properly to the inventory.
+
+
+Want help refactoring activateBox() with full parameters?
+

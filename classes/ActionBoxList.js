@@ -119,7 +119,7 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
     }
 
     // Mark JSON boxes active and add them to UI
-    activateBox(id) {
+    activateBox(id, uiArea) {
         if (this.boxMap.has(id)) {
             console.warn(`Box '${id}' already active.`);
             return this.boxMap.get(id).box;
@@ -142,6 +142,17 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         if (box) {
             box.active = true;
         }
+
+// Add inventory row and link it
+if (!box._targetRow) {
+    const row = uiArea.addInventoryRow({
+        label: box.gainTextValue + 's',
+        count: box.count,
+        rate: "+1/sec"
+    });
+    box._targetRow = row;
+}
+
         return box;
     }
 
