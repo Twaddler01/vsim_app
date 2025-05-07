@@ -1274,3 +1274,227 @@ Do the linking in activateBox()—either initially or later—so every ActionBox
 
 Want help refactoring activateBox() with full parameters?
 
+
+
+
+
+
+
+
+Absolutely — here's how you can integrate a "center" button, and + / - zoom buttons inside your panner rectangle. These will let users center the camera or zoom in/out on the canvas.
+
+
+---
+
+1. Add Buttons Inside the Panner
+
+You can draw them with Graphics, or use interactive Image or Text objects. Here’s a clean way using Phaser Text objects for simplicity:
+
+createPannerButtons() {
+    const { x, y, width, height } = this.panner;
+    const padding = 6;
+    const btnSize = 20;
+
+    const cx = x + width - btnSize - padding;
+    const cy = y + height - btnSize - padding;
+
+    // Center Button
+    this.centerBtn = this.add.text(cx, cy, '◉', {
+        font: '16px Arial',
+        color: '#ffffff',
+        backgroundColor: '#444',
+        padding: { x: 4, y: 2 },
+    }).setInteractive().setDepth(1000);
+    this.centerBtn.on('pointerdown', () => {
+        this.centerCamera();
+    });
+
+    // Zoom In Button
+    this.zoomInBtn = this.add.text(cx - 30, cy, '+', {
+        font: '16px Arial',
+        color: '#ffffff',
+        backgroundColor: '#444',
+        padding: { x: 6, y: 2 },
+    }).setInteractive().setDepth(1000);
+    this.zoomInBtn.on('pointerdown', () => {
+        this.zoomCamera(1.2);
+    });
+
+    // Zoom Out Button
+    this.zoomOutBtn = this.add.text(cx - 60, cy, '-', {
+        font: '16px Arial',
+        color: '#ffffff',
+        backgroundColor: '#444',
+        padding: { x: 6, y: 2 },
+    }).setInteractive().setDepth(1000);
+    this.zoomOutBtn.on('pointerdown', () => {
+        this.zoomCamera(1 / 1.2);
+    });
+}
+
+
+---
+
+2. Supporting Functions
+
+centerCamera() {
+    const cam = this.cameras.main;
+    cam.centerOn(cam._bounds.centerX, cam._bounds.centerY);
+    this.updatePannerViewport();
+}
+
+zoomCamera(factor) {
+    const cam = this.cameras.main;
+    cam.setZoom(Phaser.Math.Clamp(cam.zoom * factor, 0.25, 2));
+    this.updatePannerViewport();
+}
+
+
+---
+
+3. Call the Button Creator
+
+In your create() function (after setting up the panner):
+
+this.createPannerButtons();
+
+
+---
+
+This approach makes your minimap more interactive without crowding the main canvas. Would you like these buttons to fade out after a delay or always stay visible?
+
+
+
+
+
+
+
+create() {
+    const width = this.game.config.width;
+    const height = this.game.config.height;
+
+    // Set world bounds 30% larger
+    this.worldWidth = width * 1.3;
+    this.worldHeight = height * 1.3;
+    this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
+
+    // Optional background
+    this.graphics = this.add.graphics();
+    this.graphics.fillStyle(0x808080, 1);
+    this.graphics.fillRect(0, 0, this.worldWidth, this.worldHeight);
+    this.graphics.setDepth(-1);
+
+    // === Step 1: Create a UI layer ===
+    this.uiLayer = this.add.layer();
+    this.uiLayer.setDepth(10000); // Always on top
+
+    // === Step 2: Create a second camera for UI ===
+    const uiCam = this.cameras.add(0, 0, width, height);
+    uiCam.setScroll(0, 0);
+    uiCam.ignore([this.graphics]); // Ignore background/world elements
+    this.cameras.main.ignore(this.uiLayer); // Main camera ignores UI
+
+    // === Step 3: Build your UI into the UI layer ===
+    this.createMiniPanner();
+    this.createZoomButtons();
+}
+
+createMiniPanner() {
+    const camWidth = this.game.config.width;
+    const camHeight = this.game.config.height;
+
+    const pannerWidth = 150;
+    const pannerHeight = 100;
+    const pannerX = camWidth - pannerWidth - 10;
+    const pannerY = camHeight - pannerHeight - 10;
+
+    // Background
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.4);
+    bg.fillRect(pannerX, pannerY, pannerWidth, pannerHeight);
+    bg.lineStyle(2, 0xffffff, 1);
+    bg.strokeRect(pannerX, pannerY, pannerWidth, pannerHeight);
+    this.uiLayer.add(bg);
+
+    // Viewport box
+    this.pannerCameraView = this.add.graphics();
+    this.uiLayer.add(this.pannerCameraView);
+
+    // Save panner bounds for interaction
+    this.pannerBounds = { x: pannerX, y: pannerY, width: pannerWidth, height: pannerHeight };
+
+    // Input
+    this.input.on('pointerdown', this.onPannerPointerDown, this);
+    this.input.on('pointermove', this.onPannerPointerMove, this);
+    this.input.on('pointerup', () => this.isPanning = false);
+}
+
+createZoomButtons() {
+    const { x, y } = this.pannerBounds;
+    const btnStyle = { fontSize: '12px', color: '#fff', backgroundColor: '#000' };
+
+    this.zoomInBtn = this.add.text(x - 50, y, 'Zoom +', btnStyle)
+        .setInteractive()
+        .on('pointerdown', () => this.changeZoom(0.1));
+    this.uiLayer.add(this.zoomInBtn);
+
+    this.zoomOutBtn = this.add.text(x - 50, y + 20, 'Zoom -', btnStyle)
+        .setInteractive()
+        .on('pointerdown', () => this.changeZoom(-0.1));
+    this.uiLayer.add(this.zoomOutBtn);
+
+    this.centerBtn = this.add.text(x - 50, y + 40, 'Center', btnStyle)
+        .setInteractive()
+        .on('pointerdown', () => this.centerCamera());
+    this.uiLayer.add(this.centerBtn);
+}
+
+
+
+
+
+
+
+
+
+
+Great choice — Option 1 is flexible and keeps things modular.
+
+Here’s how you can implement it cleanly in your scene’s create() method:
+
+this.uiElements = this.add.group();
+this.worldElements = this.add.group();
+
+// Setup cameras
+this.cam = this.cameras.main;
+this.uiCam = this.cameras.add(0, 0, config.width, config.height);
+this.uiCam.setScroll(0, 0);
+this.uiCam.ignore(this.worldElements.getChildren());
+this.cam.ignore(this.uiElements.getChildren());
+
+// Add helper functions directly to the scene instance
+this.addToUI = (objs) => {
+    const items = Array.isArray(objs) ? objs : [objs];
+    items.forEach(obj => {
+        this.uiElements.add(obj);
+        this.cam.ignore(obj); // prevent world cam from rendering UI
+    });
+};
+
+this.addToWorld = (objs) => {
+    const items = Array.isArray(objs) ? objs : [objs];
+    items.forEach(obj => {
+        this.worldElements.add(obj);
+        this.uiCam.ignore(obj); // prevent UI cam from rendering world
+    });
+};
+
+Then, from any class that has a reference to the scene:
+
+this.scene.addToUI(myHealthBar);
+this.scene.addToWorld(enemySprite);
+
+If you want to ensure it's available even earlier, you can attach addToUI/addToWorld in the scene's constructor or init() too — just make sure your groups are initialized before use.
+
+Would you like a snippet of how to use this from inside a separate class, like an enemy or HUD manager?
+
