@@ -136,7 +136,6 @@ class MainScene extends Phaser.Scene {
         const rightSideX = this.uiLeftSide.width + 10;
         this.uiRightSide = this.add.rectangle(rightSideX, 0, width - this.uiLeftSide.width - 20, height, 0x000000).setOrigin(0);
         
-
         // *** LAYOUT AREAS
         // Gather
         const gatherArea = this.addGatherBox();
@@ -213,26 +212,27 @@ class MainScene extends Phaser.Scene {
 
     addGatherBox() {
         // *** gatherBox
-        const gatherBoxX = 0;
-        const gatherBoxY = 0;
-        const gatherBoxWidth = 400;
-        const gatherBoxHeight = 600; //// /12
+        const gatherBoxX = this.uiRightSide.x - 1; // ContainerX
+        const gatherBoxY = 100; // ContainerY
+        const gatherBoxWidth = this.uiRightSide.width + 2;
+        const gatherBoxHeight = this.worldHeight - 99;
+        const gatherBoxTitleHeight = 50;
         this.gatherBoxWidth = gatherBoxWidth;
 
         // Create the container to group the box and its contents
-        const gatherContainer = this.add.container(this.uiRightSide.x + 10, 10);
+        const gatherContainer = this.add.container(gatherBoxX, gatherBoxY);
         
         // Box background
-        const gatherBoxRect = this.add.rectangle(gatherBoxX, gatherBoxY, gatherBoxWidth, gatherBoxHeight, UI_STYLES.mainBoxColor)
+        const gatherBoxRect = this.add.rectangle(0, 0, gatherBoxWidth, gatherBoxHeight, UI_STYLES.mainBoxColor)
             .setOrigin(0);
         gatherBoxRect.setStrokeStyle(2, 0xffffff);
         
         // Box title
-        const gatherBoxRectTitle = this.add.rectangle(gatherBoxRect.x, gatherBoxRect.y, gatherBoxWidth, gatherBoxHeight / 12, UI_STYLES.titleBoxColor)
+        const gatherBoxRectTitle = this.add.rectangle(gatherBoxRect.x, gatherBoxRect.y, gatherBoxWidth, gatherBoxTitleHeight, UI_STYLES.titleBoxColor)
             .setOrigin(0);
         gatherBoxRectTitle.setStrokeStyle(2, 0xffffff);
         // Space of title area
-        this.gatherBoxRectTitleSpace = gatherBoxHeight / 12 + 4; // Add border
+        this.gatherBoxRectTitleSpace = gatherBoxTitleHeight + 4; // Add border
         
         // Title text centered at the top
         const titleText = this.add.text(
@@ -244,18 +244,33 @@ class MainScene extends Phaser.Scene {
                 align: 'center'
             }
         ).setOrigin(0.5, 0); // Center X, top Y
-        
+
         // Add everything to container
         gatherContainer.add([gatherBoxRect, gatherBoxRectTitle, titleText]);
         
         // Add boxes to gatherBox
-        const gatherBarStackX = gatherBoxX + 2;
-        const gatherBarStackY = gatherBoxHeight / 12 + 2;
+        const gatherBarStackX = 1;
+        const gatherBarStackY = gatherBoxTitleHeight + 2;
         const gatherBarStackW = gatherBoxWidth - 4;
         this.startY = gatherBarStackY;
-        
+
+this.graphicsTest = this.add.graphics();
+this.graphicsTest.fillStyle(0xffffff, 1);
+this.graphicsTest.fillRect(gatherBoxX, this.startY  + 250, 100, 30);
+
         const boxList = new ActionBoxList(this, gatherContainer, gatherBarStackX, gatherBarStackY, gatherBarStackW, 6);
-        // *** END gatherBox
+
+        // Toggle contents
+        gatherBoxRectTitle.setInteractive();
+        titleText.setInteractive();
+        
+        const toggle = () => {
+            boxList.toggleVisibility();
+        };
+        
+        gatherBoxRectTitle.on('pointerdown', toggle);
+        titleText.on('pointerdown', toggle);
+
         return boxList;
     }
 

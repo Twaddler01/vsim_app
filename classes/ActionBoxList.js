@@ -12,7 +12,8 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         this.spacing = spacing;
         this.boxes = []; // Array of { id, box }
         this.boxMap = new Map(); // ID to box map
-
+        this.isExpanded = true;
+        
         // Scroll setup
         this.scrollContainer = scene.add.container(0, 0);
         this.container.add(this.scrollContainer);
@@ -56,6 +57,11 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         });
 
         scene.add.existing(this);
+    }
+
+    toggleVisibility() {
+        this.isExpanded = !this.isExpanded;
+        this.scrollContainer.setVisible(this.isExpanded);
     }
 
     isPointerInBounds(pointer) {
@@ -143,15 +149,15 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
             box.active = true;
         }
 
-// Add inventory row and link it
-if (!box._targetRow) {
-    const row = uiArea.addInventoryRow({
-        label: box.gainTextValue + 's',
-        count: box.count,
-        rate: "+1/sec"
-    });
-    box._targetRow = row;
-}
+        // Add inventory row and link it
+        if (!box._targetRow) {
+            const row = uiArea.addInventoryRow({
+                label: box.gainTextValue + 's',
+                count: box.count,
+                rate: "+1/sec"
+            });
+            box._targetRow = row;
+        }
 
         return box;
     }
@@ -200,6 +206,13 @@ if (!box._targetRow) {
             box.setPosition(this.startX, currentY);
             currentY += 150 + this.spacing;
         }
+
+this.graphicsTest = this.add.graphics();
+this.graphicsTest.fillStyle(0xffffff, 1);
+this.graphicsTest.fillRect(0, 0, 100, 30);
+//this.graphicsTest.setDepth(1);
+
+
     }
 
     updateMask() {
