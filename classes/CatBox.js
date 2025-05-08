@@ -37,6 +37,9 @@ export default class CatBox extends Phaser.GameObjects.Container {
         const bg = scene.add.rectangle(0, 0, catBoxWidth, catBoxHeight, STYLES.catBoxColor).setOrigin(0);
         bg.setStrokeStyle(2, 0xffffff);
         this.add(bg);
+        // Overlay to hide bottom border (black)
+        const borderOverlay = scene.add.rectangle(0, catBoxHeight - 1, catBoxWidth, 2, 0x000000).setOrigin(0);
+        this.add(borderOverlay);
 
         // Title Box
         const titleRect = scene.add.rectangle(0, 0, catBoxWidth, 50, STYLES.titleBoxColor).setOrigin(0);
