@@ -22,6 +22,12 @@ const UI_STYLES = {
     backgroundColor: 0x34495e,
 };
 
+let pannerBounds, pannerGraphics, viewBoxGraphics;
+let isPanning = false;
+
+const worldW = 1600; // 1600
+const worldH = 1200; // 1200
+
 class MainScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MainScene' });
@@ -29,12 +35,23 @@ class MainScene extends Phaser.Scene {
         //
     }
 
+applyZoom(newZoom) {
+    this.cam.setZoom(Phaser.Math.Clamp(newZoom, 0.2, 6)); // last value 3
+
+    this.updateScrollBounds(); // replace hard setBounds
+    this.updateCameraBounds(); // enforce clamp right after zoom
+}
+
     preload() {
         //
     }
 
     update() {
-        //
+this.updatePannerBackground();
+this.updatePannerViewBox();
+this.updateCameraBounds();
+        // OLD PANNER
+        //this.updatePannerViewport();
     }
 
     create() {
@@ -50,73 +67,85 @@ class MainScene extends Phaser.Scene {
         const width = this.game.config.width;
         const height = this.game.config.height;
 
-        this.worldWidth = width;
-        this.worldHeight = height;
-        this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
 
-        // Enable camera drag for panning
-        this.input.on('pointerdown', (pointer) => {
-            this.isDragging = true;
-            this.dragStartX = pointer.x;
-            this.dragStartY = pointer.y;
-        });
-    
-        this.input.on('pointerup', () => {
-            this.isDragging = false;
-        });
+this.uiElements = this.add.group();
+this.worldElements = this.add.group();
 
-        // Start here
-        this.isPointerInGatherContainer = false;
-        this.input.addPointer(2); // Enable multi-touch
+this.cam = this.cameras.main;
+this.cam.setBounds(0, 0, worldW, worldH);
+this.cam.centerOn(worldW / 2, worldH / 2);
+
+// Panner setup
+const pW = 200, pH = 150;
+const pX = width - pW - 10;
+const pY = height - pH - 10;
+pannerBounds = { x: pX, y: pY, width: pW, height: pH };
+
+pannerGraphics = this.add.graphics().setScrollFactor(0);
+viewBoxGraphics = this.add.graphics().setScrollFactor(0);
+this.uiElements.addMultiple([pannerGraphics, viewBoxGraphics]);
+
+const btnStyle = { fontSize: '16px', color: '#fff', backgroundColor: '#000', padding: 5 };
+
+const zoomInBtn = this.add.text(pX - 70, pY, 'Zoom +', btnStyle)
+    .setInteractive()
+    .on('pointerdown', () => this.applyZoom(this.cam.zoom + 0.1))
+    .setScrollFactor(0);
+
+const zoomOutBtn = this.add.text(pX - 70, pY + 30, 'Zoom -', btnStyle)
+    .setInteractive()
+    .on('pointerdown', () => this.applyZoom(this.cam.zoom - 0.1))
+    .setScrollFactor(0);
+
+const centerBtn = this.add.text(pX - 70, pY + 60, 'Center', btnStyle)
+    .setInteractive()
+    .on('pointerdown', () => {
+        this.cam.centerOn(worldW / 2, worldH / 2);
+        this.applyZoom(this.cam.zoom); // recalibrate bounds
+    })
+    .setScrollFactor(0);
+
+this.uiElements.addMultiple([zoomInBtn, zoomOutBtn, centerBtn]);
+
+// World camera
+this.uiCam = this.cameras.add(0, 0, width, height);
+this.uiCam.setScroll(0, 0);
+this.worldElements.setDepth(1); // Always on bottom
+this.uiElements.setDepth(10000); // Always on top
+
+this.uiCam.ignore(this.worldElements.getChildren());
+this.cam.ignore(this.uiElements.getChildren());
+
+
+
+this.input.on('pointerdown', pointer => {
+    if (this.isInsidePanner(pointer)) {
+        isPanning = true;
+        this.updateCameraFromPointer(pointer);
+    }
+});
+
+this.input.on('pointermove', pointer => {
+    if (isPanning) {
+        this.updateCameraFromPointer(pointer);
+    }
+});
+
+this.input.on('pointerup', () => {
+    isPanning = false;
+});
+
+// Add helper functions directly to the scene instance
+this.addToWorld = (objs) => {
+    const items = Array.isArray(objs) ? objs : [objs];
+    items.forEach(obj => {
+        this.worldElements.add(obj);
+        this.uiCam.ignore(obj); // prevent UI cam from rendering world
+        this.cam.ignore(this.uiElements.getChildren());
+    });
+};
+
         this.createUI();
-
-        // ZOOM
-        const canvasWidth = this.scale.width;
-        const canvasHeight = this.scale.height;
-        
-        // Calculate min zoom that fits the entire extended world in view
-        this.minZoom = Math.max(
-            canvasWidth / this.worldWidth,
-            canvasHeight / this.worldHeight
-        );
-        
-        // Set initial zoom state
-        this.cameraZoom = 1;
-        this.pinchStartDistance = null;
-        this.cameras.main.setZoom(this.cameraZoom);
-
-        this.input.on('pointermove', (pointer) => {
-            const pointers = this.input.manager.pointers.filter(p => p.isDown);
-        
-            // Handle pinch zoom
-            if (pointers.length === 2) {
-                const [p1, p2] = pointers;
-                const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
-        
-                if (this.pinchStartDistance === null) {
-                    this.pinchStartDistance = dist;
-                } else {
-                    const delta = dist - this.pinchStartDistance;
-                    this.pinchStartDistance = dist;
-        
-                    const zoomFactor = 1 + delta * 0.00125; // 0025
-                    this.cameraZoom = Phaser.Math.Clamp(this.cameraZoom * zoomFactor, this.minZoom, 5);
-                    this.cameras.main.setZoom(this.cameraZoom);
-                }
-            } 
-            // Handle drag-to-pan
-            // * Ignore gatherContainer
-            else if (pointers.length === 1 && pointer.isDown && !this.isPointerInGatherContainer) {
-                const dragSpeed = 0.25 / this.cameraZoom; // 1
-                this.cameras.main.scrollX -= pointer.velocity.x * dragSpeed;
-                this.cameras.main.scrollY -= pointer.velocity.y * dragSpeed;
-                this.pinchStartDistance = null; // cancel zoom state
-            } 
-            else {
-                this.pinchStartDistance = null;
-            }
-        });
-
     }
 
     createUI() {
@@ -127,22 +156,17 @@ class MainScene extends Phaser.Scene {
         const height = this.game.config.height;
         // Game area rectangle
         this.graphics = this.add.graphics();
-        this.graphics.fillStyle(0xffffff, 1); // Gray color
+        this.graphics.fillStyle(0x808080, 1); // Gray color
         this.graphics.fillRect(0, 0, width, height);
         this.graphics.setDepth(-1); // -1 ensures it's behind other game elements
-
-        // **** NEW LAYOUT
-        this.uiLeftSide = this.add.rectangle(0, 0, width / 2.5, height, 0x000000).setOrigin(0);
-        const rightSideX = this.uiLeftSide.width + 10;
-        this.uiRightSide = this.add.rectangle(rightSideX, 0, width - this.uiLeftSide.width - 20, height, 0x000000).setOrigin(0);
-        
+        this.addToWorld(this.graphics);
 
         // *** LAYOUT AREAS
         // Gather
         const gatherArea = this.addGatherBox();
         
         // Inventory
-        this.catbox = new CatBox(this, -2, 100, this.uiLeftSide.width + 3, 600, { title: "Inventory" });
+        this.catbox = new CatBox(this, this.gatherBoxWidth + 20, 10, 400, 600, { title: "Inventory" });
         
         // Load layout data
         loadLayoutFromJson(gatherArea, 'gather', this.catbox);
@@ -192,6 +216,8 @@ class MainScene extends Phaser.Scene {
                 loadGame(boxList);
             //
         });
+        
+        this.addToWorld([debug1, debug2, debug3, debug4, debug5]);
     }
     
     // DEBUG
@@ -220,7 +246,8 @@ class MainScene extends Phaser.Scene {
         this.gatherBoxWidth = gatherBoxWidth;
 
         // Create the container to group the box and its contents
-        const gatherContainer = this.add.container(this.uiRightSide.x + 10, 10);
+        const gatherContainer = this.add.container(10, 10); // Top-left position
+        this.addToWorld(gatherContainer);
         
         // Box background
         const gatherBoxRect = this.add.rectangle(gatherBoxX, gatherBoxY, gatherBoxWidth, gatherBoxHeight, UI_STYLES.mainBoxColor)
@@ -259,8 +286,93 @@ class MainScene extends Phaser.Scene {
         return boxList;
     }
 
+// PANNER FUNCTIONS
+isInsidePanner(pointer) {
+    const { x, y, width, height } = pannerBounds;
+    return pointer.x >= x && pointer.x <= x + width && pointer.y >= y && pointer.y <= y + height;
+}
 
+updateCameraFromPointer(pointer) {
+    const { x, y, width, height } = pannerBounds;
+    const relX = (pointer.x - x) / width;
+    const relY = (pointer.y - y) / height;
 
+    const viewW = this.cam.width / this.cam.zoom;
+    const viewH = this.cam.height / this.cam.zoom;
+
+    const maxScrollX = worldW - viewW;
+    const maxScrollY = worldH - viewH;
+
+    const scrollX = Phaser.Math.Clamp(relX * worldW - viewW / 2, -viewW / 2, maxScrollX);
+    const scrollY = Phaser.Math.Clamp(relY * worldH - viewH / 2, -viewH / 2, maxScrollY);
+
+    this.cam.setScroll(scrollX, scrollY);
+}
+
+updatePannerBackground() {
+    const { x, y, width, height } = pannerBounds;
+    pannerGraphics.clear();
+    pannerGraphics.fillStyle(0x000000, 0.4);
+    pannerGraphics.fillRect(x, y, width, height);
+    pannerGraphics.lineStyle(2, 0xffffff, 1);
+    pannerGraphics.strokeRect(x, y, width, height);
+}
+
+updatePannerViewBox() {
+    const { x: pX, y: pY, width: pW, height: pH } = pannerBounds;
+
+    // The actual visible camera size in world units
+    const visibleW = this.cam.width / this.cam.zoom;
+    const visibleH = this.cam.height / this.cam.zoom;
+
+    // Clamp total scroll range so we don't overshoot when zoomed
+    const maxScrollX = worldW - visibleW;
+    const maxScrollY = worldH - visibleH;
+
+    // Normalize scroll to [0, 1] based on world size
+    const normX = Phaser.Math.Clamp(this.cam.scrollX / maxScrollX, 0, 1);
+    const normY = Phaser.Math.Clamp(this.cam.scrollY / maxScrollY, 0, 1);
+
+    // Map to mini-map size
+    const viewX = pX + normX * (pW - (visibleW * (pW / worldW)));
+    const viewY = pY + normY * (pH - (visibleH * (pH / worldH)));
+
+    const viewW = visibleW * (pW / worldW);
+    const viewH = visibleH * (pH / worldH);
+
+    viewBoxGraphics.clear();
+    viewBoxGraphics.fillStyle(0xffffff, 0.4);
+    viewBoxGraphics.fillRect(viewX, viewY, viewW, viewH);
+    viewBoxGraphics.lineStyle(1, 0xffffff);
+    viewBoxGraphics.strokeRect(viewX, viewY, viewW, viewH);
+}
+
+updateCameraBounds() {
+    const zoom = this.cam.zoom;
+    const viewW = this.cam.width / zoom;
+    const viewH = this.cam.height / zoom;
+
+    const maxScrollX = Math.max(0, worldW - viewW);
+    const maxScrollY = Math.max(0, worldH - viewH);
+
+    this.cam.scrollX = Phaser.Math.Clamp(this.cam.scrollX, -viewW / 2, maxScrollX);
+    this.cam.scrollY = Phaser.Math.Clamp(this.cam.scrollY, -viewH / 2, maxScrollY);
+}
+
+updateScrollBounds() {
+    const visibleW = this.cam.width / this.cam.zoom;
+    const visibleH = this.cam.height / this.cam.zoom;
+
+    const extraW = Math.max(0, visibleW - worldW);
+    const extraH = Math.max(0, visibleH - worldH);
+
+    this.cam.setBounds(
+        -extraW / 2, // allow scrolling past 0,0
+        -extraH / 2,
+        worldW + extraW,
+        worldH + extraH
+    );
+}
 
 } // MainScene
 
