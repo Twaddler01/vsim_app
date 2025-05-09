@@ -12,7 +12,11 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         this.spacing = spacing;
         this.boxes = []; // Array of { id, box }
         this.boxMap = new Map(); // ID to box map
+        this.isExpanded = true;
+        this.titleSpace = startY + 2;
 
+        // Global Container
+        
         // Scroll setup
         this.scrollContainer = scene.add.container(0, 0);
         this.container.add(this.scrollContainer);
@@ -56,6 +60,11 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         });
 
         scene.add.existing(this);
+    }
+
+    toggleVisibility() {
+        this.isExpanded = !this.isExpanded;
+        this.scrollContainer.setVisible(this.isExpanded);
     }
 
     isPointerInBounds(pointer) {
@@ -143,15 +152,15 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
             box.active = true;
         }
 
-// Add inventory row and link it
-if (!box._targetRow) {
-    const row = uiArea.addInventoryRow({
-        label: box.gainTextValue + 's',
-        count: box.count,
-        rate: "+1/sec"
-    });
-    box._targetRow = row;
-}
+        // Add inventory row and link it
+        if (!box._targetRow) {
+            const row = uiArea.addInventoryRow({
+                label: box.gainTextValue + 's',
+                count: box.count,
+                rate: "+1/sec"
+            });
+            box._targetRow = row;
+        }
 
         return box;
     }
@@ -199,6 +208,11 @@ if (!box._targetRow) {
         for (const { box } of this.boxes) {
             box.setPosition(this.startX, currentY);
             currentY += 150 + this.spacing;
+
+// Looking for height value 
+const titleArea = 100;
+const testRect = this.scene.add.rectangle(this.container.x, titleArea + currentY, 100, 30, 0xffffff).setOrigin(0);
+
         }
     }
 
@@ -206,7 +220,7 @@ if (!box._targetRow) {
         const bounds = this.container.getBounds(); // gatherContainer or the clipping region
     
         // Dynamically calculate the visible mask height
-        this.maskHeight = bounds.height - this.scene.gatherBoxRectTitleSpace; // This is the visible height of the gatherContainer
+        this.maskHeight = bounds.height - this.titleSpace; // This is the visible height of the gatherContainer
     
         // Create mask
         const maskShape = this.scene.make.graphics({ x: 0, y: 0, add: false });
