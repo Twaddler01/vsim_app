@@ -35,7 +35,7 @@
     },
     {
       "id": "test_3",
-      "title": "Gather TEST_ADD1",
+      "title": "Gather TEST3",
       "description": "Collect nearby TEST.",
       "gain": "TEST",
       "showButton": true,

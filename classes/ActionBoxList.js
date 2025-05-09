@@ -13,6 +13,9 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         this.boxes = []; // Array of { id, box }
         this.boxMap = new Map(); // ID to box map
         this.isExpanded = true;
+        this.titleSpace = startY + 2;
+
+        // Global Container
         
         // Scroll setup
         this.scrollContainer = scene.add.container(0, 0);
@@ -205,21 +208,19 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         for (const { box } of this.boxes) {
             box.setPosition(this.startX, currentY);
             currentY += 150 + this.spacing;
+
+// Looking for height value 
+const titleArea = 100;
+const testRect = this.scene.add.rectangle(this.container.x, titleArea + currentY, 100, 30, 0xffffff).setOrigin(0);
+
         }
-
-this.graphicsTest = this.add.graphics();
-this.graphicsTest.fillStyle(0xffffff, 1);
-this.graphicsTest.fillRect(0, 0, 100, 30);
-//this.graphicsTest.setDepth(1);
-
-
     }
 
     updateMask() {
         const bounds = this.container.getBounds(); // gatherContainer or the clipping region
     
         // Dynamically calculate the visible mask height
-        this.maskHeight = bounds.height - this.scene.gatherBoxRectTitleSpace; // This is the visible height of the gatherContainer
+        this.maskHeight = bounds.height - this.titleSpace; // This is the visible height of the gatherContainer
     
         // Create mask
         const maskShape = this.scene.make.graphics({ x: 0, y: 0, add: false });

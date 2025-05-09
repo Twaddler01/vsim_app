@@ -136,9 +136,15 @@ class MainScene extends Phaser.Scene {
         const rightSideX = this.uiLeftSide.width + 10;
         this.uiRightSide = this.add.rectangle(rightSideX, 0, width - this.uiLeftSide.width - 20, height, 0x000000).setOrigin(0);
         
+        // Global container
+        this.uiRightElements = this.add.container();
+        
         // *** LAYOUT AREAS
         // Gather
-        const gatherArea = this.addGatherBox();
+        const gatherArea = this.createActionBoxList(this.uiRightSide.x - 1, 100, "Gather Area");
+        // Craft
+        ////WIP need dynamic heights
+        const craftArea = this.createActionBoxList(this.uiRightSide.x - 1, 600, "Craft Area");
         
         // Inventory
         this.catbox = new CatBox(this, -2, 100, this.uiLeftSide.width + 3, 600, { title: "Inventory" });
@@ -154,8 +160,25 @@ class MainScene extends Phaser.Scene {
 
     // DEBUG BUTTONS
     debugUI(boxList) {
-        const debug1 = this.addTextButton(0, 0, 'Add test_3 Box', () => {
-            //
+        this.addTextButton(0, 0, 'Add test_1 Box', () => {
+            // flag true
+                const box = boxList.activateBox('test_1', this.catbox);
+                if (box) {
+                    console.log('Box "test_1" activated.');
+                } else {
+                    console.warn('Box "test_1" could not be activated.');
+                }
+        });
+        this.addTextButton(100, 0, 'Add test_2 Box', () => {
+            // flag true
+                const box = boxList.activateBox('test_2', this.catbox);
+                if (box) {
+                    console.log('Box "test_2" activated.');
+                } else {
+                    console.warn('Box "test_2" could not be activated.');
+                }
+        });
+        this.addTextButton(200, 0, 'Add test_3 Box', () => {
             // flag true
                 const box = boxList.activateBox('test_3', this.catbox);
                 if (box) {
@@ -163,9 +186,10 @@ class MainScene extends Phaser.Scene {
                 } else {
                     console.warn('Box "test_3" could not be activated.');
                 }
-            //
         });
-    
+
+
+
         const debug2 = this.addTextButton(0, 30, 'Remove test_3 Box', () => {
             //
             boxList.removeBoxById("test_3");
@@ -210,34 +234,30 @@ class MainScene extends Phaser.Scene {
     //this.debugContainer = this.add.container(100, 100);
     //this.debugUI(); 
 
-    addGatherBox() {
-        // *** gatherBox
-        const gatherBoxX = this.uiRightSide.x - 1; // ContainerX
-        const gatherBoxY = 100; // ContainerY
-        const gatherBoxWidth = this.uiRightSide.width + 2;
-        const gatherBoxHeight = this.worldHeight - 99;
-        const gatherBoxTitleHeight = 50;
-        this.gatherBoxWidth = gatherBoxWidth;
+    createActionBoxList(startX, startY, title) {
+        //const startX = this.uiRightSide.x - 1; // ContainerX
+        //const startY = 100; // ContainerY
+        const width = this.uiRightSide.width + 2;
+        const height = this.worldHeight - 99;
+        const titleHeight = 50;
 
         // Create the container to group the box and its contents
-        const gatherContainer = this.add.container(gatherBoxX, gatherBoxY);
+        const container = this.add.container(startX, startY);
         
         // Box background
-        const gatherBoxRect = this.add.rectangle(0, 0, gatherBoxWidth, gatherBoxHeight, UI_STYLES.mainBoxColor)
+        const boxRect = this.add.rectangle(0, 0, width, height, UI_STYLES.mainBoxColor)
             .setOrigin(0);
-        gatherBoxRect.setStrokeStyle(2, 0xffffff);
+        boxRect.setStrokeStyle(2, 0xffffff);
         
         // Box title
-        const gatherBoxRectTitle = this.add.rectangle(gatherBoxRect.x, gatherBoxRect.y, gatherBoxWidth, gatherBoxTitleHeight, UI_STYLES.titleBoxColor)
+        const boxRectTitle = this.add.rectangle(boxRect.x, boxRect.y, width, titleHeight, UI_STYLES.titleBoxColor)
             .setOrigin(0);
-        gatherBoxRectTitle.setStrokeStyle(2, 0xffffff);
-        // Space of title area
-        this.gatherBoxRectTitleSpace = gatherBoxTitleHeight + 4; // Add border
-        
+        boxRectTitle.setStrokeStyle(2, 0xffffff);
+       
         // Title text centered at the top
         const titleText = this.add.text(
-            gatherBoxWidth / 2, 15, // X centered, Y a bit down from top
-            "Gather Area",
+            width / 2, 15, // X centered, Y a bit down from top
+            title,
             {
                 fontSize: UI_STYLES.fontSizeLarge,
                 color: UI_STYLES.textColor,
@@ -246,35 +266,30 @@ class MainScene extends Phaser.Scene {
         ).setOrigin(0.5, 0); // Center X, top Y
 
         // Add everything to container
-        gatherContainer.add([gatherBoxRect, gatherBoxRectTitle, titleText]);
+        container.add([boxRect, boxRectTitle, titleText]);
         
         // Add boxes to gatherBox
-        const gatherBarStackX = 1;
-        const gatherBarStackY = gatherBoxTitleHeight + 2;
-        const gatherBarStackW = gatherBoxWidth - 4;
-        this.startY = gatherBarStackY;
+        const stackX = 1;
+        const stackY = titleHeight + 2;
+        const stackW = width - 4;
 
-this.graphicsTest = this.add.graphics();
-this.graphicsTest.fillStyle(0xffffff, 1);
-this.graphicsTest.fillRect(gatherBoxX, this.startY  + 250, 100, 30);
-
-        const boxList = new ActionBoxList(this, gatherContainer, gatherBarStackX, gatherBarStackY, gatherBarStackW, 6);
+        const boxList = new ActionBoxList(this, container, stackX, stackY, stackW, 6);
 
         // Toggle contents
-        gatherBoxRectTitle.setInteractive();
+        boxRectTitle.setInteractive();
         titleText.setInteractive();
         
         const toggle = () => {
             boxList.toggleVisibility();
         };
         
-        gatherBoxRectTitle.on('pointerdown', toggle);
+        boxRectTitle.on('pointerdown', toggle);
         titleText.on('pointerdown', toggle);
+
+        this.uiRightElements.add(container);
 
         return boxList;
     }
-
-
 
 
 } // MainScene
