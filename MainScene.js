@@ -136,27 +136,30 @@ class MainScene extends Phaser.Scene {
         const rightSideX = this.uiLeftSide.width + 10;
         this.uiRightSide = this.add.rectangle(rightSideX, 0, width - this.uiLeftSide.width - 20, height, 0x000000).setOrigin(0);
         
-        // Global container
-        this.uiRightElements = this.add.container();
-        
         // *** LAYOUT AREAS
+        this.layoutArea = [];
         // Gather
         const gatherArea = this.createActionBoxList(this.uiRightSide.x - 1, 100, "Gather Area");
         // Craft
         ////WIP need dynamic heights
-        const craftArea = this.createActionBoxList(this.uiRightSide.x - 1, 600, "Craft Area");
+        const areaHeight = gatherArea.getContentHeight();
+        
+        const craftArea = this.createActionBoxList(this.uiRightSide.x - 1, areaHeight, "Craft Area");
+        
+        this.layoutArea.push(gatherArea.container, craftArea.container);
+        this.setLayoutPos();
         
         // Inventory
         this.catbox = new CatBox(this, -2, 100, this.uiLeftSide.width + 3, 600, { title: "Inventory" });
         
         // Load layout data
         loadLayoutFromJson(gatherArea, 'gather', this.catbox);
-    
         // DEBUG
         this.debugContainer = this.add.container(500, 500);
         //this.addToWorld(this.debugContainer);
         this.debugUI(gatherArea);
     }
+
 
     // DEBUG BUTTONS
     debugUI(boxList) {
@@ -286,15 +289,37 @@ class MainScene extends Phaser.Scene {
         boxRectTitle.on('pointerdown', toggle);
         titleText.on('pointerdown', toggle);
 
-        this.uiRightElements.add(container);
+        // Hide initially
+        boxList.scrollContainer.setVisible(false);
+        boxRect.setVisible(false);
 
+        ////??
+        container.boxRect = boxRect;
+        
+        container.getLayoutHeight = function () {
+            return this.isExpanded ? titleHeight + boxRect.height : titleHeight;
+        };
+        
         return boxList;
     }
+    
+    setLayoutPos() {
+        let currentY = 100;
+        for (const area of this.layoutArea) {
+            area.setY(currentY);
+            currentY += area.getLayoutHeight();
+        }
+    }
+    
+    setY(y) {
+        this.container.y = y;
+    }
+
+
 
 
 } // MainScene
 
-// FUNCTIONS
 async function loadLayoutFromJson(object, section, addedObject) {
     const response = await fetch('assets/data/layout.json');
     const data = await response.json();

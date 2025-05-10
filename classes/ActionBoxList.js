@@ -12,11 +12,10 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
         this.spacing = spacing;
         this.boxes = []; // Array of { id, box }
         this.boxMap = new Map(); // ID to box map
-        this.isExpanded = true;
+        this.isExpanded = false;
         this.titleSpace = startY + 2;
+        this.offsetY = this.titleSpace + 100;
 
-        // Global Container
-        
         // Scroll setup
         this.scrollContainer = scene.add.container(0, 0);
         this.container.add(this.scrollContainer);
@@ -65,6 +64,9 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
     toggleVisibility() {
         this.isExpanded = !this.isExpanded;
         this.scrollContainer.setVisible(this.isExpanded);
+        this.container.boxRect.setVisible(this.isExpanded);
+        
+        this.repositionBoxes();
     }
 
     isPointerInBounds(pointer) {
@@ -80,10 +82,16 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
     }
 
     getContentHeight() {
-        if (this.boxes.length === 0) return 0;
-    
+        // Default offswt
+        if (this.boxes.length === 0) return this.offsetY;
+        
         const totalBoxHeight = this.boxes.length * 150;
         const totalSpacing = (this.boxes.length - 1) * this.spacing;
+        
+        // DEBUG
+        this.scene.add.rectangle(0, this.offsetY, 100, totalBoxHeight + totalSpacing, 0xffffff)
+            .setOrigin(0);
+        
         return totalBoxHeight + totalSpacing;
     }
 
@@ -209,11 +217,10 @@ export default class ActionBoxList extends Phaser.GameObjects.Container {
             box.setPosition(this.startX, currentY);
             currentY += 150 + this.spacing;
 
-// Looking for height value 
-const titleArea = 100;
-const testRect = this.scene.add.rectangle(this.container.x, titleArea + currentY, 100, 30, 0xffffff).setOrigin(0);
-
+            // Initial value
+            this.container.boxRect.height = currentY;
         }
+        //this.getContentHeight();
     }
 
     updateMask() {
@@ -229,5 +236,9 @@ const testRect = this.scene.add.rectangle(this.container.x, titleArea + currentY
         const mask = maskShape.createGeometryMask();
     
         this.scrollContainer.setMask(mask);
+    }
+
+    setY(y) {
+        this.container.y = y;
     }
 }
